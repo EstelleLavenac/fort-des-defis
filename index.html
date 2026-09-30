@@ -116,6 +116,10 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
 .coin.gem{background:radial-gradient(circle at 34% 28%,#ffffff 0 8%,#b8f1ff 20%,#38b6e8 55%,#10628f);box-shadow:inset 0 0 0 4px #1b7fb0,0 0 16px rgba(120,220,255,.8);color:#fff}
 @keyframes spinc{50%{transform:scaleX(.25)}}
 .score{font-family:var(--display);font-size:clamp(30px,6vw,46px);color:var(--gold);margin:0;text-shadow:0 3px 0 #3a2208,0 0 20px rgba(255,190,40,.5)}
+.announce{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:20;pointer-events:none;font-family:var(--display);font-size:clamp(34px,7.5vw,84px);color:#ffd54a;text-align:center;line-height:1;letter-spacing:2px;width:min(92vw,1100px);text-wrap:balance;
+  text-shadow:0 4px 0 #6b3a06,0 8px 0 #2c1406,0 0 40px rgba(255,190,40,.7),0 14px 30px rgba(0,0,0,.6);opacity:0}
+.announce.show{animation:ann 2.8s cubic-bezier(.2,1.3,.4,1) forwards}
+@keyframes ann{0%{opacity:0;transform:translate(-50%,-50%) scale(2.2)}14%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1;transform:translate(-50%,-50%) scale(1.04)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
 .confetti{position:fixed;top:-40px;font-size:30px;pointer-events:none;z-index:40;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
@@ -132,6 +136,7 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
   <div class="right">
     <div class="keys" id="keys" aria-label="Clés gagnées"></div>
     <button class="iconbtn" id="repeat" aria-label="Réécouter le perroquet">💬</button>
+    <button class="iconbtn" id="musBtn" aria-label="Couper la musique">🎵</button>
     <button class="iconbtn" id="ambBtn" aria-label="Couper le bruit de la mer">🌊</button>
   </div>
   <div class="guide">
@@ -151,6 +156,7 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
   </form>
 </div>
 
+<div class="announce" id="announce" aria-live="polite"></div>
 <div class="overlay" id="overlay" hidden><div class="panel" id="panel"></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -217,10 +223,80 @@ function startAmbience(){
 $("ambBtn").onclick=()=>{ambOn=!ambOn;if(ambGain)ambGain.gain.setTargetAtTime(ambOn?.9:0,actx.currentTime,.2);
   $("ambBtn").textContent=ambOn?"🌊":"🔇";$("ambBtn").setAttribute("aria-label",ambOn?"Couper le bruit de la mer":"Remettre le bruit de la mer")};
 
-let lastSpoken="",lastEl=null;
-function say(t,el){lastSpoken=t;lastEl=el||null;(el||$("bubble")).textContent=t;
-  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t.replace(/[^\p{L}\p{N}\s'!?.,-]/gu,""));
-    u.lang="fr-FR";u.rate=.92;u.pitch=1.15;const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith("fr"));if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){}}
+/* ================= MUSIQUE ORIGINALE ================= */
+let music=null,musicOn=true,noiseBuf=null;
+const MN=n=>440*Math.pow(2,(n-69)/12);
+// thème original en ré mineur, 8 mesures de croches : [pas, note MIDI, durée en croches]
+const MEL=[[0,62,2],[2,69,2],[4,65,1],[5,67,1],[6,69,2],[8,70,2],[10,69,1],[11,67,1],[12,69,4],
+  [16,62,2],[18,69,2],[20,65,1],[21,67,1],[22,69,1],[23,72,1],[24,74,2],[26,72,1],[27,69,1],[28,67,4],
+  [32,65,2],[34,67,1],[35,69,1],[36,70,2],[38,69,1],[39,67,1],[40,65,2],[42,64,2],[44,62,2],[46,64,1],[47,65,1],
+  [48,67,2],[50,69,2],[52,70,2],[54,72,2],[56,74,4],[60,69,4]];
+const MELMAP={};MEL.forEach(m=>MELMAP[m[0]]=m);
+const CH=[[38,[50,53,57]],[43,[50,55,58]],[38,[50,53,57]],[48,[48,52,55]],[46,[50,53,58]],[43,[50,55,58]],[48,[48,52,55]],[45,[49,52,57]]];
+function impulse(c,sec){const len=Math.floor(c.sampleRate*sec),b=c.createBuffer(2,len,c.sampleRate);for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6)}return b}
+function env(g,t,a,peak,hold,rel){g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.setValueAtTime(peak,t+Math.max(a,hold));g.gain.exponentialRampToValueAtTime(0.0001,t+Math.max(a,hold)+rel)}
+function brass(f,t,d,vol=.06){const c=actx,fl=c.createBiquadFilter(),g=c.createGain();fl.type="lowpass";fl.Q.value=1.2;
+  fl.frequency.setValueAtTime(450,t);fl.frequency.linearRampToValueAtTime(2600,t+.06);fl.frequency.exponentialRampToValueAtTime(1300,t+Math.max(.1,d));
+  [-8,0,8].forEach(dt=>{const o=c.createOscillator();o.type="sawtooth";o.frequency.value=f;o.detune.value=dt;o.connect(fl);o.start(t);o.stop(t+d+.4)});
+  fl.connect(g);g.connect(music.bus);env(g,t,.035,vol,d-.04,.28)}
+function pad(notes,t,d){const c=actx;notes.forEach(n=>{const fl=c.createBiquadFilter(),g=c.createGain();fl.type="lowpass";fl.frequency.value=1000;
+  [0,11].forEach(dt=>{const o=c.createOscillator();o.type="sawtooth";o.frequency.value=MN(n);o.detune.value=dt;o.connect(fl);o.start(t);o.stop(t+d+.6)});
+  fl.connect(g);g.connect(music.bus);env(g,t,.35,.014,d-.1,.5)})}
+function bassN(n,t,d){const c=actx,o=c.createOscillator(),fl=c.createBiquadFilter(),g=c.createGain();o.type="sawtooth";o.frequency.value=MN(n);
+  fl.type="lowpass";fl.frequency.value=380;o.connect(fl);fl.connect(g);g.connect(music.bus);env(g,t,.01,.13,d*.5,.18);o.start(t);o.stop(t+d+.3)}
+function noiseSrc(){const s=actx.createBufferSource();s.buffer=noiseBuf;return s}
+function timp(f,t,v=.45){const c=actx,o=c.createOscillator(),g=c.createGain();o.type="sine";o.frequency.setValueAtTime(f*1.6,t);o.frequency.exponentialRampToValueAtTime(f,t+.07);
+  o.connect(g);g.connect(music.bus);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+1.1);o.start(t);o.stop(t+1.2);
+  const n=noiseSrc(),fl=c.createBiquadFilter(),g2=c.createGain();fl.type="lowpass";fl.frequency.value=260;n.connect(fl);fl.connect(g2);g2.connect(music.bus);
+  g2.gain.setValueAtTime(v*.4,t);g2.gain.exponentialRampToValueAtTime(.0001,t+.2);n.start(t,Math.random()*.5);n.stop(t+.25)}
+function snare(t,v){const c=actx,n=noiseSrc(),fl=c.createBiquadFilter(),g=c.createGain();fl.type="bandpass";fl.frequency.value=1900;fl.Q.value=.8;
+  n.connect(fl);fl.connect(g);g.connect(music.bus);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+.13);n.start(t,Math.random()*.5);n.stop(t+.15)}
+function hat(t){const c=actx,n=noiseSrc(),fl=c.createBiquadFilter(),g=c.createGain();fl.type="highpass";fl.frequency.value=7000;
+  n.connect(fl);fl.connect(g);g.connect(music.bus);g.gain.setValueAtTime(.035,t);g.gain.exponentialRampToValueAtTime(.0001,t+.05);n.start(t,Math.random()*.5);n.stop(t+.06)}
+function playStep(s,t,spb){
+  const bar=s>>3,pos=s&7,ch=CH[bar];
+  if(pos===0)pad(ch[1],t,spb*8);
+  if(pos===0||pos===3||pos===4||pos===6)bassN(pos===4?ch[0]+12:ch[0],t,spb*.9);
+  const m=MELMAP[s];if(m&&music.mode!=="calm")brass(MN(m[1]),t,spb*m[2]);
+  if(pos===0||pos===4)timp(MN(ch[0]<44?ch[0]:ch[0]-12),t,pos===0?.45:.3);
+  if(pos===2||pos===6)snare(t,.05);
+  if(bar===7&&pos>=4){snare(t,.07+(pos-4)*.03);snare(t+spb/2,.09+(pos-4)*.03)}
+  if(music.mode==="treasure"){hat(t);hat(t+spb/2);if(pos%2===1)snare(t,.04)}
+}
+function schedule(){if(!music)return;const c=actx,spb=60/music.tempo/2;
+  while(music.next<c.currentTime+.15){playStep(music.step,music.next,spb);music.next+=spb;music.step=(music.step+1)%64}}
+function startMusic(){
+  const c=audio();if(!c||music)return;
+  const len=c.sampleRate;noiseBuf=c.createBuffer(1,len,c.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+  const bus=c.createGain();bus.gain.value=0;const out=c.createGain();out.gain.value=1;bus.connect(out);out.connect(master);
+  const rev=c.createConvolver();rev.buffer=impulse(c,2.6);const rg=c.createGain();rg.gain.value=.3;bus.connect(rev);rev.connect(rg);rg.connect(out);
+  music={bus,out,step:0,next:c.currentTime+.15,tempo:100,mode:"theme"};
+  musicLevel(.55);setInterval(schedule,25)}
+function musicLevel(v,mode){if(!music)return;if(mode){music.mode=mode;music.tempo=mode==="treasure"?132:100}
+  music.out.gain.setTargetAtTime(musicOn?1:0,actx.currentTime,.3);music.bus.gain.setTargetAtTime(v,actx.currentTime,.5)}
+function suspense(){if(!music)return;const c=actx,t0=c.currentTime;
+  for(let i=0;i<22;i++){const k=i/21,t=t0+1.3*(1-Math.pow(1-k,1.6));timp(MN(38),t,.08+k*.3)}
+  [50,53,57].forEach(n=>brass(MN(n),t0+1.35,.9,.045))}
+function victory(){if(!music)return;const t=actx.currentTime+.05;[[62,0,.14],[66,.14,.14],[69,.28,.14],[74,.42,.9]].forEach(([n,dt,d])=>brass(MN(n),t+dt,d,.07));timp(MN(38),t+.42,.5)}
+$("musBtn").onclick=()=>{musicOn=!musicOn;if(music)music.out.gain.setTargetAtTime(musicOn?1:0,actx.currentTime,.3);
+  $("musBtn").textContent=musicOn?"🎵":"🔕";$("musBtn").setAttribute("aria-label",musicOn?"Couper la musique":"Remettre la musique")};
+
+/* ================= VOIX : perroquet & narrateur ================= */
+let lastSpoken="",lastEl=null,lastNarr=null,voices=[];
+function loadVoices(){try{voices=speechSynthesis.getVoices()}catch(e){}}
+loadVoices();try{speechSynthesis.onvoiceschanged=loadVoices}catch(e){}
+function pickVoice(narr){const fr=voices.filter(v=>v.lang&&v.lang.toLowerCase().startsWith("fr"));if(!fr.length)return null;
+  if(narr)return fr.find(v=>/thomas|paul|henri|nicolas|claude|daniel|antoine|mathieu|guillaume|remy|rémy|male|homme/i.test(v.name))||fr[fr.length>1?fr.length-1:0];
+  return fr.find(v=>/am[eé]lie|audrey|marie|julie|hortense|denise|vivienne|female|femme|google/i.test(v.name))||fr[0]}
+function speak(text,narr){try{const u=new SpeechSynthesisUtterance(text.replace(/[^\p{L}\p{N}\s'!?.,…-]/gu,""));u.lang="fr-FR";
+  if(narr){u.rate=.86;u.pitch=.5;u.volume=1}else{u.rate=.92;u.pitch=1.2}
+  const v=pickVoice(narr);if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){}}
+function announce(text){const a=$("announce");a.textContent=text;a.classList.remove("show");void a.offsetWidth;a.classList.add("show")}
+function say(t,el,narr,keep){lastSpoken=t;lastEl=el||null;lastNarr=narr||null;if(t!=null)(el||$("bubble")).textContent=t;
+  try{if(!keep)speechSynthesis.cancel()}catch(e){}
+  if(narr){announce(narr);speak(narr,true)}
+  if(t)speak(t,false)}
+function narrate(line){announce(line);speak(line,true)}
 $("repeat").onclick=()=>say(lastSpoken,overlay.hidden?null:lastEl);
 
 /* ================= TEXTURES PROCÉDURALES ================= */
@@ -563,11 +639,14 @@ const tweens=[];
 function tween(ms,fn,ease){ease=ease||(k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2);return new Promise(res=>tweens.push({t0:performance.now(),ms,fn,ease,res}))}
 function flyTo(pos,look,ms){const p0=camera.position.clone(),l0=curLook.clone();
   return tween(ms,k=>{camera.position.lerpVectors(p0,pos,k);curLook.lerpVectors(l0,look,k);camera.lookAt(curLook)})}
+const TITLES={memo:"Épreuve des cartes !",compte:"Épreuve des coquillages !",peche:"Épreuve de la pêche !",intrus:"Épreuve de l'intrus !",enigme:"Épreuve des devinettes !"};
 let busy=false,saved=null;
 async function enterDoor(id,after){
   if(busy)return;busy=true;orbit.enabled=false;
   const isGate=id==="tresor",d=isGate?{g:gateObj.g,h:8}:doors[id];
-  creak();
+  creak();suspense();
+  try{speechSynthesis.cancel()}catch(_){}
+  narrate(isGate?"La grotte au trésor !":TITLES[id]);
   if(!isGate)tween(900,k=>{d.openAmt=Math.max(d.openAmt,k)},k=>1-Math.pow(1-k,3));
   saved={pos:camera.position.clone(),look:target.clone()};
   const c=new THREE.Vector3();d.g.getWorldPosition(c);c.y+=d.h*.5;
@@ -643,7 +722,7 @@ $("nameInput").oninput=e=>{if(bow){bow.userData.plate.material.map=tex(signCanva
 $("nameForm").onsubmit=async e=>{
   e.preventDefault();if(sailing||arrived||!renderer)return;
   capName=$("nameInput").value.trim().replace(/^./,c=>c.toUpperCase());store("fortNom",capName);$("capName").textContent=cap();
-  audio();try{actx.resume()}catch(_){}startAmbience();fanfare();
+  audio();try{actx.resume()}catch(_){}startAmbience();startMusic();fanfare();
   $("intro").classList.add("sail");sailing=true;
   say(`En route, ${cap()} ! Regarde, le fort est là-bas !`);
   const r=homeRadius();orbit.r=orbit.tR=r;orbit.theta=orbit.tTheta=0;orbit.phi=orbit.tPhi=1.39;
@@ -655,7 +734,7 @@ $("nameForm").onsubmit=async e=>{
   $("intro").classList.add("leave");$("hud").classList.remove("off");
   const all=done.length===CHALLENGES.length;
   say(all?`Tu as toutes les clés, ${cap()} ! Clique sur la grille du trésor !`
-    :`Nous sommes arrivés au fort, ${cap()} ! Gagne les cinq clés pour ouvrir la grille du trésor. Clique sur une porte !`);
+    :`Gagne les cinq clés pour ouvrir la grille du trésor. Clique sur une porte !`,null,`Voici le Fort des Défis ! ${cap()}, l'aventure commence !`);
   setTimeout(()=>{$("intro").hidden=true},1100)};
 
 /* ================= PANNEAU & ÉPREUVES ================= */
@@ -664,25 +743,25 @@ let timers=[];
 function openPanel(title,sayText,cave){
   panel.className="panel"+(cave?" cave":"");
   panel.innerHTML=`<button class="close" aria-label="Retour au fort">✕</button><h2>${title}</h2><p class="say"></p><div class="dots"></div><div class="zone" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:14px"></div>`;
-  panel.querySelector(".close").onclick=closePanel;overlay.hidden=false;say(sayText,panel.querySelector(".say"));return panel.querySelector(".zone")}
+  panel.querySelector(".close").onclick=closePanel;overlay.hidden=false;musicLevel(.18);say(sayText,panel.querySelector(".say"),null,true);return panel.querySelector(".zone")}
 async function closePanel(){
   timers.forEach(t=>{clearInterval(t);clearTimeout(t)});timers=[];
   overlay.hidden=true;try{speechSynthesis.cancel()}catch(e){}
   CHALLENGES.forEach(c=>{if(!done.includes(c.id)){const d=doors[c.id],s=d.openAmt;if(s>0)tween(700,k=>{d.openAmt=s*(1-k)})}});
   const opening=done.length===CHALLENGES.length&&gateWant===0;
-  await leaveDoor();refresh();
+  await leaveDoor();refresh();musicLevel(.55,"theme");
   if(opening){gateWant=1;rumble();fanfare()}
-  say(done.length===CHALLENGES.length?(opening?`Bravo ${cap()} ! Tu as toutes les clés ! Regarde, la grille du trésor se lève !`:"Tu peux retourner dans la grotte au trésor !"):"Choisis une autre porte !")}
-const sayP=t=>say(t,panel.querySelector(".say"));
+  say(done.length===CHALLENGES.length?(opening?`Bravo ${cap()} ! Regarde, la grille du trésor se lève !`:"Tu peux retourner dans la grotte au trésor !"):"Choisis une autre porte !",null,opening?"Les cinq clés sont réunies ! Le trésor vous attend !":null)}
+const sayP=(t,narr)=>say(t,panel.querySelector(".say"),narr);
 function setDots(n,total){panel.querySelector(".dots").innerHTML=Array.from({length:total},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("")}
 function confetti(chars){const set=[...chars];for(let i=0;i<28;i++){const s=document.createElement("div");s.className="confetti";s.textContent=set[rnd(set.length)];
   s.style.left=rnd(100)+"vw";s.style.animationDuration=(1.6+Math.random()*1.6)+"s";s.style.animationDelay=Math.random()*.6+"s";document.body.appendChild(s);setTimeout(()=>s.remove(),4200)}}
 function win(id){
-  yay();confetti("🗝️⭐✨");const first=!done.includes(id);if(first){done.push(id);store("fortDefis",done)}
+  yay();victory();confetti("🗝️⭐✨");const first=!done.includes(id);if(first){done.push(id);store("fortDefis",done)}
   const zone=panel.querySelector(".zone");panel.querySelector(".dots").innerHTML="";
   zone.innerHTML=`<div style="font-size:96px;animation:bob 1.2s infinite;filter:drop-shadow(0 0 16px #ffc62b)">🗝️</div><button class="big">Retour au fort</button>`;
   const left=CHALLENGES.length-done.length;
-  sayP(first?(left?`Bravo ${cap()} ! Tu as gagné une clé ! Plus que ${left} !`:`Bravo ${cap()} ! C'est la dernière clé ! Le trésor t'attend !`):"Bravo, encore réussi !");
+  sayP(first?(left?`Bravo ! Plus que ${left} clé${left>1?"s":""} !`:`C'est la dernière clé ! Le trésor t'attend !`):"Bravo, encore réussi !",first?`Une clé pour ${cap()} !`:null);
   zone.querySelector(".big").onclick=closePanel}
 function wrong(b,msg){b.classList.remove("bad");void b.offsetWidth;b.classList.add("bad");nope();sayP(msg)}
 function openChallenge(id){({memo,compte,peche,intrus,enigme})[id]()}
@@ -741,7 +820,8 @@ function tresor(){
   if(done.length<CHALLENGES.length){const left=CHALLENGES.length-done.length;creak();nope();say(`La grille est fermée ! Il te manque encore ${left} clé${left>1?"s":""}.`);return}
   enterDoor("tresor",runTreasure)}
 function runTreasure(){
-  const zone=openPanel("La grotte au trésor",`${cap()}, le coffre s'ouvre ! Attrape un maximum de pièces d'or !`,true);
+  const zone=openPanel("La grotte au trésor",`Attrape un maximum de pièces d'or !`,true);
+  musicLevel(.4,"treasure");narrate("Attention… Top départ !");
   zone.innerHTML=`<p class="score">0 pièce</p><p class="say clock">⏳ 25</p><div class="vault"><span class="torch" style="left:22px"></span><span class="torch" style="right:22px"></span><div class="chest" id="chest"><div class="shine"></div><div class="box"></div><div class="lid"></div></div><span class="crab">🦀</span></div>`;
   const vault=zone.querySelector(".vault"),score=zone.querySelector(".score"),clock2=zone.querySelector(".clock");let n=0,time=25;
   timers.push(setTimeout(()=>{const ch=zone.querySelector("#chest");if(ch)ch.classList.add("open");fanfare()},500));
@@ -751,8 +831,9 @@ function runTreasure(){
     b.onclick=()=>{if(b.classList.contains("caught"))return;anim.pause();b.classList.add("caught");n+=gem?5:1;beep(gem?[988,1318,1760]:[988,1318],.07);score.textContent=n+(n>1?" pièces":" pièce");setTimeout(()=>b.remove(),400)}}
   timers.push(setTimeout(()=>{timers.push(setInterval(drop,420))},1300));
   timers.push(setInterval(()=>{time--;clock2.textContent="⏳ "+time;
-    if(time<=0){timers.forEach(t=>{clearInterval(t);clearTimeout(t)});timers=[];confetti("🪙💎⭐👑");fanfare();clock2.textContent="";
-      sayP(`Bravo ${cap()} ! Tu as ramassé ${n} pièces d'or ! Tu es la reine du fort !`);
+    if(time===5)narrate("Plus que cinq secondes !");
+    if(time<=0){timers.forEach(t=>{clearInterval(t);clearTimeout(t)});timers=[];confetti("🪙💎⭐👑");fanfare();victory();musicLevel(.18,"theme");clock2.textContent="";
+      sayP(`Tu as ramassé ${n} pièces d'or ! Tu es la reine du fort !`,`Temps écoulé ! Bravo ${cap()} !`);
       vault.outerHTML=`<div style="font-size:110px;animation:bob 1.4s infinite;filter:drop-shadow(0 0 20px #ffc62b)">👑</div><button class="big" id="again">Rejouer</button>`;
       $("again").onclick=()=>{done=[];store("fortDefis",done);gateWant=0;closePanel().then(()=>say("C'est reparti ! Choisis une porte."))}}},1000))}
 
