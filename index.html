@@ -1037,7 +1037,7 @@ function openPanel(title,sayText,cave){
   panel.querySelector(".close").onclick=closePanel;overlay.hidden=false;musicLevel(.18);say(sayText,panel.querySelector(".say"),null,true);return panel.querySelector(".zone")}
 function stopAll(){timers.forEach(t=>{clearInterval(t);clearTimeout(t)});timers=[];cleanups.forEach(f=>{try{f()}catch(e){}});cleanups=[];document.querySelectorAll('.sablier').forEach(e=>e.remove());sab=null}
 /* ================= LE SABLIER ================= */
-const TIMES={cloches:95,ombres:60,crabes:50,memo:100,compte:70,peche:50,intrus:70,enigme:100,vigie:110,labyrinthe:80,jarres:110,pont:65,eau:40};
+const TIMES={cloches:95,ombres:60,crabes:50,memo:100,compte:70,peche:50,intrus:70,enigme:100,vigie:110,labyrinthe:80,jarres:110,pont:80,eau:40};
 let sab=null;
 function slam(){const c=actx;if(!c||!noiseBuf)return;const t=c.currentTime;
   const n=c.createBufferSource();n.buffer=noiseBuf;const f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=380;n.connect(f);f.connect(g);g.connect(c.destination);
@@ -1397,7 +1397,7 @@ function jarres(){
 
 /* ---------- Le pont de corde (salle 3D, vue à la première personne) ---------- */
 function pont(){
-  const N=[10,12,14][LV()],Z0=8.2,Z1=-8.2,SAG=1.1,ZONE=[.3,.27,.21][LV()];
+  const N=[6,8,10][LV()],Z0=8.2,Z1=-8.2,SAG=1.1,ZONE=[.45,.38,.3][LV()];
   const yAt=z=>-Math.sin((Z0-z)/(Z0-Z1)*Math.PI)*SAG;
   let bridge;
   const zone=openRoom("Le pont de corde","Traverse le pont ! Clique quand l'aiguille est dans le vert pour faire un pas.",()=>{
@@ -1425,7 +1425,7 @@ function pont(){
     roomTorch(r,-7.95,1.6,Z0+1.5,1,0);roomTorch(r,7.95,1.6,Z0+1.5,-1,0);roomTorch(r,-7.95,1.6,Z1-1.5,1,0);roomTorch(r,7.95,1.6,Z1-1.5,-1,0);
     r.camera.position.set(0,1.5,Z0+1.4);r.camera.lookAt(0,.8,Z1);return r});
   zone.innerHTML=`<div class="balance"><div class="green" style="left:${50-ZONE*46}%;width:${ZONE*92}%"></div><div class="needle"></div></div><button class="big step">👣 Un pas !</button>`;
-  const needle=zone.querySelector(".needle");let step=0,shown=0,wob=0,speed=[2.1,2.4,2.9][LV()],t0=performance.now(),fin=false,look=0;
+  const needle=zone.querySelector(".needle");let step=0,shown=0,wob=0,speed=[1.25,1.5,1.9][LV()],t0=performance.now(),fin=false,look=0;
   const zAt=s=>Z0+.6-(Z0-Z1+1.2)*s/N;
   const npos=()=>Math.sin((performance.now()-t0)/1000*speed);
   room.update=(dt,t)=>{flicker(room,t);room.water.offset.set(t*.02,t*.015);room.key.rotation.y+=dt*1.6;
@@ -1435,10 +1435,10 @@ function pont(){
     look+=((step>=N?-.05:-.22)-look)*dt*2;c.lookAt(sway*.3,c.position.y+look-(.35+wob*.3*Math.sin(t*9)),z-6);c.rotateZ(sway*.12+wob*Math.sin(t*14)*.1);
     needle.style.left=(50+npos()*46)+"%"};
   function act(){if(fin)return;
-    if(Math.abs(npos())<ZONE){step++;beep([300,240],.06,"triangle",.08);creak();speed+=.16;
+    if(Math.abs(npos())<ZONE){step++;beep([300,240],.06,"triangle",.08);creak();speed+=[.04,.06,.1][LV()];
       if(step>=N){fin=true;yay();secure(),setTimeout(()=>win("pont"),1200)}
       else if(step===Math.floor(N/2))sayP("Tu es à la moitié ! Ne regarde pas en bas…")}
-    else{wob=1;nope();if(step>0)step--;sayP("Oups, le pont bouge ! Attends que l'aiguille soit dans le vert.")}}
+    else{wob=1;nope();if(LV()===2&&step>0)step--;sayP("Oups, le pont bouge ! Attends que l'aiguille soit dans le vert, puis clique.")}}
   zone.querySelector(".step").onclick=act;room.click=act;
   const kd=e=>{if(e.code==="Space"||e.code==="Enter"){e.preventDefault();act()}};addEventListener("keydown",kd);cleanups.push(()=>removeEventListener("keydown",kd))}
 
