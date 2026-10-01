@@ -171,6 +171,7 @@ const CHALLENGES=[
   {id:"peche",icon:"🎣",name:"La pêche",x:0,keep:true},
   {id:"intrus",icon:"🔍",name:"L'intrus",x:8.5},
   {id:"enigme",icon:"🐢",name:"Les devinettes",x:15.5},
+  {id:"vigie",icon:"🦉",name:"L'énigme de la vigie",tower:true},
 ];
 let done=load("fortDefis",[]), capName=load("fortNom","Lia");
 let gateWant=done.length===CHALLENGES.length?1:0;
@@ -511,8 +512,11 @@ function buildFort(){
   mk(frameG,stoneMat(.22,.22,"#e2d2b2"),0);
   mk(sillG,stoneMat(.3,.1,"#c9b796"),.2).position.y=-1.25;
   // petite tour de guet à une extrémité, mât et drapeau
-  const tw=new THREE.Mesh(new THREE.CylinderGeometry(1.6,1.7,5.5,32),stoneMat(.5,.6,"#c8b48e"));tw.position.set(-FL-FR+3.2,FTOP+1.3+2.75,0);tw.castShadow=tw.receiveShadow=true;scene.add(tw);
-  const twTop=new THREE.Mesh(new THREE.CylinderGeometry(1.9,1.9,.5,32),corCap);twTop.position.set(tw.position.x,FTOP+1.3+5.75,0);scene.add(twTop);
+  const TX=-FL-FR+4.6,TR=2.2;
+  const tw=new THREE.Mesh(new THREE.CylinderGeometry(TR,TR+.1,FTOP+5.5,40),stoneMat(.6,2.6,"#c8b48e"));tw.position.set(TX,2+(FTOP+5.5)/2,0);tw.castShadow=tw.receiveShadow=true;scene.add(tw);
+  const twTop=new THREE.Mesh(new THREE.CylinderGeometry(TR+.35,TR+.35,.6,40),corCap);twTop.position.set(TX,FTOP+7.8,0);twTop.castShadow=true;scene.add(twTop);
+  for(let k=0;k<10;k++){const a=k/10*Math.PI*2;box(.7,.8,.5,stoneMat(.1,.1,"#a85a3c"),TX+Math.cos(a)*(TR+.15),FTOP+8.5,Math.sin(a)*(TR+.15)).rotation.y=-a}
+  tw.userData.pick="vigie";pickables.push(tw);
   makeFlag(FL+FR-4,FTOP+1.3,0,6.5,3.8,"#1f5fa8",8,true);
   // quai devant les portes
   box(44,1.1,2.6,stoneMat(5,.3,"#b9a888"),0,1.45,FR+1.3);
@@ -522,7 +526,8 @@ function buildFort(){
       box(5,.22,2,ironM,0,13.7,FR+1);[-2.4,2.4].forEach(x=>box(.12,1.2,.12,ironM,x,14.4,FR+1.9));box(4.9,.1,.1,ironM,0,15,FR+1.9);
       for(let k=-2;k<=2;k++)box(.06,1.1,.06,ironM,k,14.35,FR+1.9);
       [-2.2,2.2].forEach(x=>{const s=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,1.8,6),ironM);s.position.set(x,13,FR+.8);s.rotation.x=.75;scene.add(s)});
-    }else makeDoor(c,c.x,2,FR+.02,3.2,5.2)});
+    }else if(c.tower)makeDoor(c,-FL-FR+4.6,FTOP+1.5,2.26,1.4,2.6);
+    else makeDoor(c,c.x,2,FR+.02,3.2,5.2)});
   buildGate(FR+.02);
   buildBridge();
   [[-12,6.6],[-4.9,6.6],[4.9,6.6],[12,6.6],[-3,16.4],[3,16.4]].forEach(([x,y],i)=>makeTorch(x,y,FR,i));
@@ -661,7 +666,7 @@ const tweens=[];
 function tween(ms,fn,ease){ease=ease||(k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2);return new Promise(res=>tweens.push({t0:performance.now(),ms,fn,ease,res}))}
 function flyTo(pos,look,ms){const p0=camera.position.clone(),l0=curLook.clone();
   return tween(ms,k=>{camera.position.lerpVectors(p0,pos,k);curLook.lerpVectors(l0,look,k);camera.lookAt(curLook)})}
-const TITLES={memo:"Épreuve des cartes !",compte:"Épreuve des coquillages !",peche:"Épreuve de la pêche !",intrus:"Épreuve de l'intrus !",enigme:"Épreuve des devinettes !"};
+const TITLES={memo:"Épreuve des cartes !",compte:"Épreuve des coquillages !",peche:"Épreuve de la pêche !",intrus:"Épreuve de l'intrus !",enigme:"Épreuve des devinettes !",vigie:"L'énigme de la vigie !"};
 let busy=false,saved=null;
 async function enterDoor(id,after){
   if(busy)return;busy=true;orbit.enabled=false;
@@ -756,7 +761,7 @@ $("nameForm").onsubmit=async e=>{
   $("intro").classList.add("leave");$("hud").classList.remove("off");
   const all=done.length===CHALLENGES.length;
   say(all?`Tu as toutes les clés, ${cap()} ! Clique sur la grille du trésor !`
-    :`Gagne les cinq clés pour ouvrir la grille du trésor. Clique sur une porte !`,null,`Voici le Fort des Défis ! ${cap()}, l'aventure commence !`);
+    :`Gagne les ${CHALLENGES.length} clés pour ouvrir la grille du trésor. Clique sur une porte, ou sur la tour de guet !`,null,`Voici le Fort des Défis ! ${cap()}, l'aventure commence !`);
   setTimeout(()=>{$("intro").hidden=true},1100)};
 
 /* ================= PANNEAU & ÉPREUVES ================= */
@@ -773,7 +778,7 @@ async function closePanel(){
   const opening=done.length===CHALLENGES.length&&gateWant===0;
   await leaveDoor();refresh();musicLevel(.55,"theme");
   if(opening){gateWant=1;rumble();fanfare()}
-  say(done.length===CHALLENGES.length?(opening?`Bravo ${cap()} ! Regarde, la grille du trésor se lève !`:"Tu peux retourner dans la grotte au trésor !"):"Choisis une autre porte !",null,opening?"Les cinq clés sont réunies ! Le trésor vous attend !":null)}
+  say(done.length===CHALLENGES.length?(opening?`Bravo ${cap()} ! Regarde, la grille du trésor se lève !`:"Tu peux retourner dans la grotte au trésor !"):"Choisis une autre porte !",null,opening?"Toutes les clés sont réunies ! Le trésor vous attend !":null)}
 const sayP=(t,narr)=>say(t,panel.querySelector(".say"),narr);
 function setDots(n,total){panel.querySelector(".dots").innerHTML=Array.from({length:total},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("")}
 function confetti(chars){const set=[...chars];for(let i=0;i<28;i++){const s=document.createElement("div");s.className="confetti";s.textContent=set[rnd(set.length)];
@@ -786,7 +791,7 @@ function win(id){
   sayP(first?(left?`Bravo ! Plus que ${left} clé${left>1?"s":""} !`:`C'est la dernière clé ! Le trésor t'attend !`):"Bravo, encore réussi !",first?`Une clé pour ${cap()} !`:null);
   zone.querySelector(".big").onclick=closePanel}
 function wrong(b,msg){b.classList.remove("bad");void b.offsetWidth;b.classList.add("bad");nope();sayP(msg)}
-function openChallenge(id){({memo,compte,peche,intrus,enigme})[id]()}
+function openChallenge(id){({memo,compte,peche,intrus,enigme,vigie})[id]()}
 function memo(){
   const zone=openPanel("Les cartes","Retourne les cartes et trouve les paires pareilles !");
   const pics=shuffle(["🦀","🐙","🐠","⚓","🐬","🦈","🐳","🏝️"]).slice(0,4),deck=shuffle([...pics,...pics]);
@@ -836,6 +841,24 @@ function enigme(){
     qz.innerHTML=`<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;const g=qz.firstChild;
     shuffle(opts).forEach(x=>{const b=document.createElement("button");b.className="pick";b.textContent=x;
       b.onclick=()=>{if(x===ans){b.classList.add("good");yay();round++;if(round===3)setTimeout(()=>win("enigme"),700);else timers.push(setTimeout(next,1000))}else wrong(b,"Pas tout à fait ! "+q)};g.appendChild(b)})}
+  next()}
+function vigie(){
+  const zone=openPanel("L'énigme de la vigie",`Hou hou ! Bonjour ${cap()}. Je suis Maître Hulotte, le gardien de la vigie. Écoute bien mes énigmes en rimes !`);
+  const riddles=shuffle([
+    ["Je n'ai ni bouche ni dent, pourtant je souffle tout le temps. Je fais danser les voiles au vent. Qui suis-je, mon enfant ?","🌬️",["🌬️","☀️","🐟"]],
+    ["Sur la plage je viens, je repars, je reviens, et j'efface tes châteaux de sable le matin. Qui suis-je ?","🌊",["🌊","🦀","🐚"]],
+    ["J'ai ma maison sur le dos, je suis tout lent et pas bien gros, et quand il pleut je sors aussitôt. Qui suis-je ?","🐌",["🐌","🐢","🐇"]],
+    ["Je suis rond comme un ballon, jaune comme un citron, et le soir je vais dormir derrière l'horizon. Qui suis-je ?","☀️",["☀️","🍋","⚽"]],
+    ["J'ai deux aiguilles mais je ne couds pas. Je dis l'heure à papa, à maman et à toi. Qui suis-je ?","🕰️",["🕰️","🧵","🌵"]],
+    ["J'ai huit pattes et je tisse ma toile, j'attends les mouches sous les étoiles. Qui suis-je ?","🕷️",["🕷️","🐝","🐞"]],
+    ["Je suis blanche et froide, je tombe du ciel en hiver, et avec moi on fait des bonhommes tout l'après-midi entier. Qui suis-je ?","❄️",["❄️","🌧️","☁️"]],
+    ["On me casse avant de me manger, je suis dans le gâteau et dans l'omelette du dîner. Qui suis-je ?","🥚",["🥚","🍎","🧀"]],
+    ["Je suis une maison qui flotte sur l'eau, j'ai des voiles et un drapeau. Qui suis-je ?","⛵",["⛵","🏠","🚗"]]]).slice(0,3);
+  let round=0;zone.innerHTML=`<div class="keeper"><b>🦉</b><span>Maître Hulotte</span></div><div class="q" style="width:100%;display:flex;justify-content:center"></div>`;const qz=zone.lastChild;
+  function next(){setDots(round,3);const [q,ans,opts]=riddles[round];if(round===0)timers.push(setTimeout(()=>sayP(q),6500));else sayP(q);
+    qz.innerHTML=`<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;const g=qz.firstChild;
+    shuffle(opts).forEach(x=>{const b=document.createElement("button");b.className="pick";b.textContent=x;
+      b.onclick=()=>{if(x===ans){b.classList.add("good");yay();round++;if(round===3)setTimeout(()=>win("vigie"),700);else timers.push(setTimeout(next,1000))}else wrong(b,"Hou hou, ce n'est pas ça ! Réécoute bien : "+q)};g.appendChild(b)})}
   next()}
 function tresor(){
   if(busy)return;

@@ -2,7 +2,7 @@
 
 Un jeu d'aventure en 3D pour les enfants à partir de 6 ans, jouable directement dans le navigateur.
 
-On arrive en bateau devant un fort posé sur la mer. Chacune des cinq portes cache une épreuve, et chaque épreuve réussie donne une clé. Avec les cinq clés, la grille du trésor se lève.
+On arrive en bateau devant un fort posé sur la mer. Chacune des portes, et la tour de guet, cache une épreuve, et chaque épreuve réussie donne une clé. Avec les six clés, la grille du trésor se lève.
 
 ## Les épreuves
 
@@ -11,6 +11,7 @@ On arrive en bateau devant un fort posé sur la mer. Chacune des cinq portes cac
 - **La pêche** : attraper 8 poissons.
 - **L'intrus** : trouver celui qui n'est pas de la même famille.
 - **Les devinettes** : écouter les devinettes de Mamie Caret, la tortue gardienne.
+- **L'énigme de la vigie** : dans la tour de guet, résoudre les énigmes en rimes de Maître Hulotte, le vieux hibou.
 - **La grotte au trésor** : attraper un maximum de pièces d'or en 25 secondes.
 
 Un perroquet lit toutes les consignes à voix haute, donc pas besoin de savoir lire.
