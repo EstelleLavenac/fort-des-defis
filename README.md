@@ -1,6 +1,6 @@
 # Le Fort des Défis
 
-Un jeu d'aventure en 3D pour les enfants à partir de 6 ans, jouable directement dans le navigateur.
+Un jeu d'aventure en 3D à jouer en équipe (de 1 à 4 enfants, de 4 à 13 ans), directement dans le navigateur.
 
 On arrive en bateau devant un fort posé sur la mer, puis on marche soi-même sur la passerelle jusque dans la cour intérieure. Tout autour de la cour, chaque porte cache une épreuve, et chaque épreuve réussie donne une clé. Avec les dix clés, la grille du trésor se lève.
 
@@ -19,6 +19,11 @@ On arrive en bateau devant un fort posé sur la mer, puis on marche soi-même su
 - **La grotte au trésor** : attraper un maximum de pièces d'or en 25 secondes.
 
 Un perroquet lit toutes les consignes à voix haute, donc pas besoin de savoir lire.
+
+## En équipe et contre la montre
+
+- Au départ, on indique les prénoms et l'âge des joueurs. Ils jouent chacun leur tour, et la difficulté s'adapte à l'âge de celui qui joue (durée du sablier, nombre de cartes, taille du labyrinthe, énigmes plus difficiles pour les grands…).
+- Chaque épreuve a un sablier. S'il se vide avant la fin, le joueur est fait prisonnier : il doit résoudre une énigme de Maître Hulotte pour être libéré. La porte se referme sans clé, mais on peut retenter l'épreuve plus tard.
 
 ## Jouer
 
