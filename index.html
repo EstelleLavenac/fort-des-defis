@@ -285,11 +285,17 @@ $("musBtn").onclick=()=>{musicOn=!musicOn;if(music)music.out.gain.setTargetAtTim
 let lastSpoken="",lastEl=null,lastNarr=null,voices=[];
 function loadVoices(){try{voices=speechSynthesis.getVoices()}catch(e){}}
 loadVoices();try{speechSynthesis.onvoiceschanged=loadVoices}catch(e){}
+// on choisit les voix les plus naturelles disponibles (voix « Natural », « Online », « Premium », « Enhanced », Google…)
+const MALE=/henri|thomas|paul|nicolas|daniel|antoine|mathieu|guillaume|r[ée]my|jean|gérard|gerard|fabrice|claude|male|homme/i,
+      FEMALE=/denise|vivienne|eloise|éloïse|am[ée]lie|audrey|marie|julie|hortense|aurélie|aurelie|charlotte|coralie|jacqueline|female|femme|google/i;
+function quality(v){let q=0;const n=v.name;
+  if(/natural|neural/i.test(n))q+=60;if(/online/i.test(n))q+=40;if(/premium|enhanced|améliorée|amelioree|siri/i.test(n))q+=45;
+  if(/google/i.test(n))q+=25;if(!v.localService)q+=10;if(/fr-FR/i.test(v.lang))q+=8;if(/compact|espeak/i.test(n))q-=40;return q}
 function pickVoice(narr){const fr=voices.filter(v=>v.lang&&v.lang.toLowerCase().startsWith("fr"));if(!fr.length)return null;
-  if(narr)return fr.find(v=>/thomas|paul|henri|nicolas|claude|daniel|antoine|mathieu|guillaume|remy|rémy|male|homme/i.test(v.name))||fr[fr.length>1?fr.length-1:0];
-  return fr.find(v=>/am[eé]lie|audrey|marie|julie|hortense|denise|vivienne|female|femme|google/i.test(v.name))||fr[0]}
+  const want=narr?MALE:FEMALE,other=narr?FEMALE:MALE;
+  return fr.slice().sort((a,b)=>(quality(b)+(want.test(b.name)?30:other.test(b.name)?-30:0))-(quality(a)+(want.test(a.name)?30:other.test(a.name)?-30:0)))[0]}
 function speak(text,narr){try{const u=new SpeechSynthesisUtterance(text.replace(/[^\p{L}\p{N}\s'!?.,…-]/gu,""));u.lang="fr-FR";
-  if(narr){u.rate=.86;u.pitch=.5;u.volume=1}else{u.rate=.92;u.pitch=1.2}
+  if(narr){u.rate=.94;u.pitch=.88;u.volume=1}else{u.rate=1;u.pitch=1.08}
   const v=pickVoice(narr);if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){}}
 function announce(text){const a=$("announce");a.textContent=text;a.classList.remove("show");void a.offsetWidth;a.classList.add("show")}
 function say(t,el,narr,keep){lastSpoken=t;lastEl=el||null;lastNarr=narr||null;if(t!=null)(el||$("bubble")).textContent=t;
