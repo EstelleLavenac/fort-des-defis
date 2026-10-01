@@ -55,6 +55,14 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
 @media (max-width:640px){.hint{display:none}}
 @media (max-width:900px){.right{top:calc(78px + env(safe-area-inset-top,0px));max-width:calc(100% - 32px)}}
 @keyframes bob{50%{transform:translateY(-8px) rotate(-4deg)}}
+.team{display:flex;flex-direction:column;gap:8px;width:100%}
+.prow{display:flex;gap:6px;align-items:center}
+.prow input{flex:1;min-width:0;font-size:22px!important;padding:6px 10px!important}
+.prow select{font:inherit;font-size:18px;border:3px solid #9c7a52;border-radius:12px;padding:6px;background:#fffaf0}
+.prow .rm{border:0;background:#d9412f;color:#fff;border-radius:50%;width:34px;height:34px;flex:none}
+.addp{border:2px dashed #9c7a52;background:transparent;border-radius:12px;padding:6px 12px;font-size:16px;color:#6b4a2b}
+.plate p b{color:#fff}
+
 .prison{position:absolute;inset:0;z-index:0;pointer-events:none;
   background:linear-gradient(rgba(10,6,3,.35),rgba(10,6,3,.35)),
   repeating-linear-gradient(90deg,transparent 0 9%,#2a2a30 9% 10.4%,#6c6c78 10.4% 11%,#1c1c22 11% 12%,transparent 12% 18%),
@@ -207,7 +215,7 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
 <div class="fade" id="fade"></div>
 
 <div class="hud off" id="hud">
-  <div class="plate"><h1>Le Fort des Défis</h1><p id="capName">Capitaine</p></div>
+  <div class="plate"><h1>Le Fort des Défis</h1><p id="capName">L'équipe</p></div>
   <div class="right">
     <div class="keys" id="keys" aria-label="Clés gagnées"></div>
     <button class="iconbtn" id="repeat" aria-label="Réécouter le perroquet">💬</button>
@@ -225,8 +233,9 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
 <div class="intro" id="intro">
   <h2><span>L'aventure de la mer</span>Le Fort des Défis</h2>
   <form class="namecard" id="nameForm">
-    <label for="nameInput">Comment s'appelle notre capitaine ?</label>
-    <input id="nameInput" maxlength="12" autocomplete="off" placeholder="Ton prénom">
+    <label>Qui joue dans l'équipe ?</label>
+    <div class="team" id="teamRows"></div>
+    <button type="button" class="addp" id="addPlayer">+ Ajouter un joueur</button>
     <button class="big" type="submit" id="goBtn" disabled>⛵ En route !</button>
     <span class="loading" id="loading">Le fort se prépare…</span>
   </form>
@@ -259,13 +268,18 @@ const CHALLENGES=[
   {id:"eau",icon:"💧",name:"La cellule d'eau",s:109.2},
   {id:"peche",icon:"🎣",name:"La pêche",s:132.55},
 ];
-let done=load("fortDefis",[]), capName=load("fortNom","Lia");
+let done=load("fortDefis",[]),team=load("fortEquipe",[{name:"Lia",age:6},{name:"Roméo",age:7},{name:"Lou",age:10}]),turn=load("fortTour",0),resolved=false;
 let gateWant=done.length===CHALLENGES.length?1:0;
 function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function store(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 const rnd=n=>Math.floor(Math.random()*n);
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
-const cap=()=>capName?"Capitaine "+capName:"Capitaine";
+const cur=()=>team[((turn%team.length)+team.length)%team.length]||{name:"Capitaine",age:6};
+const cap=()=>cur().name;
+const LV=()=>{const a=cur().age;return a<=6?0:a<=8?1:2};
+const teamNames=()=>{const n=team.map(p=>p.name);return n.length>1?n.slice(0,-1).join(", ")+" et "+n[n.length-1]:n[0]||"Capitaine"};
+function nextTurn(){turn=(turn+1)%team.length;store("fortTour",turn);updatePlate()}
+function updatePlate(){const el=$("capName");if(el)el.innerHTML=`Au tour de <b>${cap()}</b> · ${cur().age} ans`}
 
 /* ================= AUDIO ================= */
 let actx,master,ambOn=true,ambGain;
@@ -760,7 +774,7 @@ function buildBow(){
   const deckS=new THREE.Shape();deckS.moveTo(-3.2,0);deckS.lineTo(0,5);deckS.lineTo(3.2,0);deckS.lineTo(-3.2,0);
   const deck=new THREE.Mesh(new THREE.ShapeGeometry(deckS),wm);deck.rotation.x=-Math.PI/2;bow.add(deck);
   [-1,1].forEach(s=>{const len=Math.hypot(3.2,5),r=new THREE.Mesh(new THREE.BoxGeometry(.35,.5,len),rail);r.position.set(s*1.6,.25,-2.5);r.rotation.y=s*Math.atan2(3.2,5);bow.add(r)});
-  const plate=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.55),new THREE.MeshBasicMaterial({map:tex(signCanvas(capName||" ",true))}));plate.rotation.x=-Math.PI/2;plate.position.set(0,.02,-1.6);bow.add(plate);bow.userData.plate=plate;
+  const plate=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.55),new THREE.MeshBasicMaterial({map:tex(signCanvas("L'Équipe",true))}));plate.rotation.x=-Math.PI/2;plate.position.set(0,.02,-1.6);bow.add(plate);bow.userData.plate=plate;
   const coil=new THREE.Mesh(new THREE.TorusGeometry(.45,.12,8,20),new THREE.MeshStandardMaterial({color:C("#cbb48a"),roughness:1}));coil.rotation.x=-Math.PI/2;coil.position.set(-1.1,.12,-.9);bow.add(coil);
   bow.position.set(0,-1.6,-3);bow.rotation.x=.06;
   const L=new THREE.PointLight(0xfff0dd,.5,8);L.position.set(0,1.5,1);bow.add(L)}
@@ -806,7 +820,7 @@ function updatePlayer(dt,t){
 }
 function onEnterCourt(){
   const left=CHALLENGES.length-done.length;
-  say(left?`Les portes des épreuves sont tout autour de la cour. Clique sur une porte pour y aller ! Il te faut ${left} clé${left>1?"s":""}.`:"Tu as toutes les clés ! Va vite à la grille du trésor, tout au fond !",null,"Bienvenue dans la cour du fort !")}
+  say(left?`Les portes des épreuves sont tout autour de la cour. Il vous faut ${left} clé${left>1?"s":""}. ${cap()}, c'est à toi de choisir une porte !`:"Vous avez toutes les clés ! Allez vite à la grille du trésor, tout au fond !",null,"Bienvenue dans la cour du fort !")}
 /* marqueur au sol */
 let marker;
 function showMarker(x,z){marker.position.set(x,FLOOR+.03,z);marker.visible=true;marker.userData.t=0}
@@ -879,7 +893,7 @@ async function enterDoor(id,after){
   const y0=P.yaw,p0=P.pitch,x0=P.x,z0=P.z;
   await tween(500,k=>{P.yaw=y0+angDiff(y0,yawFace)*k;P.pitch=p0+(.06-p0)*k;P.x=x0+(s.x-x0)*k;P.z=z0+(s.z-z0)*k;placeCamera()});
   creak();suspense();try{speechSynthesis.cancel()}catch(_){}
-  narrate(isGate?"La grotte au trésor !":TITLES[id]);
+  resolved=false;narrate(isGate?"La grotte au trésor !":TITLES[id]+" "+cap()+", à toi de jouer !");
   if(!isGate)tween(900,k=>{doors[id].openAmt=Math.max(doors[id].openAmt,k)},k=>1-Math.pow(1-k,3));
   await new Promise(r=>setTimeout(r,700));
   const p=new THREE.Vector3();d.g.getWorldPosition(p);
@@ -957,14 +971,22 @@ function init(){
   $("goBtn").disabled=false;$("loading").hidden=true}
 
 /* ================= INTRO ================= */
-$("nameInput").value=capName;
-$("nameInput").oninput=e=>{if(bow){bow.userData.plate.material.map=tex(signCanvas(e.target.value.trim()||" ",true));bow.userData.plate.material.needsUpdate=true}};
+function renderTeam(){const box=$("teamRows");box.innerHTML="";
+  team.forEach((p,i)=>{const row=document.createElement("div");row.className="prow";
+    row.innerHTML=`<input id="pn${i}" maxlength="12" autocomplete="off" placeholder="Prénom" aria-label="Prénom du joueur ${i+1}"><select id="pa${i}" aria-label="Âge">${Array.from({length:10},(_,k)=>`<option value="${k+4}">${k+4} ans</option>`).join("")}</select>${team.length>1?`<button type="button" class="rm" aria-label="Retirer">✕</button>`:""}`;
+    row.querySelector("input").value=p.name;row.querySelector("select").value=String(p.age);
+    row.querySelector("input").oninput=e=>{p.name=e.target.value};row.querySelector("select").onchange=e=>{p.age=+e.target.value};
+    const rm=row.querySelector(".rm");if(rm)rm.onclick=()=>{team.splice(i,1);renderTeam()};box.appendChild(row)});
+  $("addPlayer").hidden=team.length>=4}
+$("addPlayer").onclick=()=>{team.push({name:"",age:8});renderTeam();const l=$("teamRows").querySelectorAll("input");l[l.length-1].focus()};
+renderTeam();
 $("nameForm").onsubmit=async e=>{
   e.preventDefault();if(sailing||arrived||!renderer)return;
-  capName=$("nameInput").value.trim().replace(/^./,c=>c.toUpperCase());store("fortNom",capName);$("capName").textContent=cap();
+  team=team.map(p=>({name:p.name.trim().replace(/^./,c=>c.toUpperCase()),age:p.age})).filter(p=>p.name);if(!team.length)team=[{name:"Capitaine",age:7}];
+  store("fortEquipe",team);turn=turn%team.length;updatePlate();
   audio();try{actx.resume()}catch(_){}startAmbience();startMusic();fanfare();
   $("intro").classList.add("sail");sailing=true;
-  say(`En route, ${cap()} ! Regarde, le fort est là-bas !`);
+  say(`En route, ${teamNames()} ! Regardez, le fort est là-bas !`);
   const p0=camera.position.clone(),end=new THREE.Vector3(0,FLOOR+EYE+1.2,66),look=new THREE.Vector3(0,7,0);
   tween(5600,k=>{bowDrop=0},k=>k).then(()=>tween(1600,k=>{bowDrop=-3.5*k}).then(()=>{bow.visible=false}));
   await tween(7600,k=>{camera.position.lerpVectors(p0,end,k);camera.position.y+=Math.sin(k*38)*.22*(1-k);curLook.copy(look);camera.lookAt(curLook)},k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2);
@@ -972,7 +994,7 @@ $("nameForm").onsubmit=async e=>{
   const c0=camera.position.clone();await tween(900,k=>{const tgt=new THREE.Vector3(0,FLOOR+EYE,58);camera.position.lerpVectors(c0,tgt,k);curLook.copy(camera.position).add(lookDir());camera.lookAt(curLook)});
   sailing=false;arrived=true;P.fp=true;
   $("intro").classList.add("leave");$("hud").classList.remove("off");
-  say(`Marche sur la passerelle jusqu'à l'entrée du fort ! Clique sur le chemin devant toi, ou utilise les flèches du clavier.`,null,`Voici le Fort des Défis ! ${cap()}, l'aventure commence !`);
+  say(`Marchez sur la passerelle jusqu'à l'entrée du fort ! Cliquez sur le chemin, ou utilisez les flèches du clavier.`,null,`Voici le Fort des Défis ! ${teamNames()}, l'aventure commence !`);
   setTimeout(()=>{$("intro").hidden=true},1100)};
 
 /* ================= PANNEAU & ÉPREUVES ================= */
@@ -1011,7 +1033,7 @@ function drawSab(cv,k,t,warn){const x=cv.getContext("2d"),W=cv.width,H=cv.height
   [12,W-18].forEach(px=>{const g=x.createLinearGradient(px,0,px+6,0);g.addColorStop(0,"#5e3014");g.addColorStop(.5,"#a8692f");g.addColorStop(1,"#4a250c");x.fillStyle=g;x.fillRect(px,top,6,bot-top)});
   if(warn){x.fillStyle=`rgba(255,60,30,${.18+.15*Math.sin(t*10)})`;x.fillRect(0,0,W,H)}}
 function startSablier(id){
-  const total=TIMES[id]||60,wrap=document.createElement("div");wrap.className="sablier";wrap.innerHTML=`<canvas width="120" height="190"></canvas><b></b>`;panel.appendChild(wrap);
+  const total=Math.round((TIMES[id]||60)*[1,.85,.65][LV()]),wrap=document.createElement("div");wrap.className="sablier";wrap.innerHTML=`<canvas width="120" height="190"></canvas><b></b>`;panel.appendChild(wrap);
   const cv=wrap.querySelector("canvas"),lab=wrap.querySelector("b");
   sab={id,total,start:performance.now()+1200,el:wrap,warned:false,last:-1,secured:false};
   wrap.classList.add("flip");
@@ -1033,14 +1055,14 @@ const PRISON=[
 let lastPrison=-1;
 function lose(id){
   if(!sab||sab.secured)return;
-  stopAll();if(room){room.click=null;room.hover=null}
+  stopAll();resolved=true;if(room){room.click=null;room.hover=null}
   slam();sadSting();
   const bars=document.createElement("div");bars.className="prison";overlay.insertBefore(bars,overlay.firstChild);
-  let qi;do qi=rnd(PRISON.length);while(qi===lastPrison);lastPrison=qi;const [q,ans,opts]=PRISON[qi];
+  const pool=LV()===2?HARD:PRISON;let qi;do qi=rnd(pool.length);while(qi===lastPrison&&pool.length>1);lastPrison=qi;const [q,ans,opts]=pool[qi];
   const zone=panel.querySelector(".zone");panel.querySelector(".dots").innerHTML="";
   zone.innerHTML=`<div class="lost"><span>⛓️</span><p>Le sablier est vide…<br><b>Tu es prisonnier !</b></p></div>
     <div class="keeper"><b>🦉</b><span>Maître Hulotte</span></div><div class="grid prisonq" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;
-  sayP("Pour sortir de prison, réponds à l'énigme de Maître Hulotte. "+q,"Le temps est écoulé ! Tu es prisonnier !");
+  sayP("Pour sortir de prison, réponds à l'énigme de Maître Hulotte. "+q,`Le temps est écoulé ! ${cap()} est prisonnier !`);
   const g=zone.querySelector(".prisonq");let freed=false;
   shuffle(opts).forEach(x=>{const b=document.createElement("button");b.className="pick";b.textContent=x;
     b.onclick=()=>{if(freed)return;
@@ -1052,20 +1074,20 @@ function lose(id){
     g.appendChild(b)})}
 
 async function closePanel(){
-  stopAll();document.querySelectorAll('.prison').forEach(e=>e.remove());
+  stopAll();const wasTurn=resolved;resolved=false;if(wasTurn&&team.length>1)nextTurn();document.querySelectorAll('.prison').forEach(e=>e.remove());
   if(room){$("fade").classList.add("on");closeRoom();renderer.domElement.style.cursor=""}
   overlay.hidden=true;try{speechSynthesis.cancel()}catch(e){}
   CHALLENGES.forEach(c=>{if(!done.includes(c.id)){const d=doors[c.id],s=d.openAmt;if(s>0)tween(700,k=>{d.openAmt=s*(1-k)})}});
   const opening=done.length===CHALLENGES.length&&gateWant===0;
   await leaveDoor();refresh();musicLevel(.55,"theme");
   if(opening){gateWant=1;rumble();fanfare()}
-  say(done.length===CHALLENGES.length?(opening?`Bravo ${cap()} ! Regarde, la grille du trésor se lève !`:"Tu peux retourner dans la grotte au trésor !"):(done.length?"Super ! Choisis une autre porte dans la cour.":"Choisis une autre porte !"),null,opening?"Toutes les clés sont réunies ! Le trésor vous attend !":null)}
+  say(done.length===CHALLENGES.length?(opening?`Bravo ${cap()} ! Regarde, la grille du trésor se lève !`:"Tu peux retourner dans la grotte au trésor !"):(team.length>1?`Au tour de ${cap()} ! Choisis une porte dans la cour.`:"Choisis une autre porte dans la cour !"),null,opening?"Toutes les clés sont réunies ! Le trésor vous attend !":null)}
 const sayP=(t,narr)=>say(t,panel.querySelector(".say"),narr);
 function setDots(n,total){panel.querySelector(".dots").innerHTML=Array.from({length:total},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("")}
 function confetti(chars){const set=[...chars];for(let i=0;i<28;i++){const s=document.createElement("div");s.className="confetti";s.textContent=set[rnd(set.length)];
   s.style.left=rnd(100)+"vw";s.style.animationDuration=(1.6+Math.random()*1.6)+"s";s.style.animationDelay=Math.random()*.6+"s";document.body.appendChild(s);setTimeout(()=>s.remove(),4200)}}
 function win(id){
-  stopAll();
+  stopAll();resolved=true;
   yay();victory();confetti("🗝️⭐✨");const first=!done.includes(id);if(first){done.push(id);store("fortDefis",done)}
   const zone=panel.querySelector(".zone");panel.querySelector(".dots").innerHTML="";
   zone.innerHTML=`<div style="font-size:96px;animation:bob 1.2s infinite;filter:drop-shadow(0 0 16px #ffc62b)">🗝️</div><button class="big">Retour au fort</button>`;
@@ -1076,8 +1098,8 @@ function wrong(b,msg){b.classList.remove("bad");void b.offsetWidth;b.classList.a
 function openChallenge(id){({memo,compte,peche,intrus,enigme,vigie,labyrinthe,eau,jarres,pont})[id]();startSablier(id)}
 function memo(){
   const zone=openPanel("Les cartes","Retourne les cartes et trouve les paires pareilles !");
-  const pics=shuffle(["🦀","🐙","🐠","⚓","🐬","🦈","🐳","🏝️"]).slice(0,4),deck=shuffle([...pics,...pics]);
-  zone.innerHTML=`<div class="grid" style="grid-template-columns:repeat(4,1fr);max-width:480px"></div>`;
+  const pics=shuffle(["🦀","🐙","🐠","⚓","🐬","🦈","🐳","🏝️"]).slice(0,[4,5,6][LV()]),deck=shuffle([...pics,...pics]);
+  zone.innerHTML=`<div class="grid" style="grid-template-columns:repeat(${[4,5,4][LV()]},1fr);max-width:${[480,560,480][LV()]}px"></div>`;
   const g=zone.firstChild;let open=[],found=0,lock=false;
   deck.forEach(p=>{const b=document.createElement("button");b.className="card";b.textContent="?";b.setAttribute("aria-label","Carte");
     b.onclick=()=>{if(lock||b.classList.contains("up"))return;tick();b.classList.add("up");b.textContent=p;open.push(b);
@@ -1088,8 +1110,8 @@ function memo(){
 function compte(){
   const zone=openPanel("Les coquillages","Compte bien !");
   const things=[["🐚","coquillages"],["⭐","étoiles de mer"],["🦀","crabes"],["🐟","poissons"],["💎","diamants"]];let round=0;const total=3;
-  function next(){setDots(round,total);const [e,w]=things[rnd(things.length)];const n=2+rnd(6);sayP(`Combien y a-t-il de ${w} ?`);
-    let opts=new Set([n]);while(opts.size<3){const k=n+rnd(5)-2;if(k>=1&&k<=9)opts.add(k)}
+  function next(){setDots(round,total);const [e,w]=things[rnd(things.length)];const n=[2,4,7][LV()]+rnd([6,6,8][LV()]);sayP(`Combien y a-t-il de ${w} ?`);
+    let opts=new Set([n]);while(opts.size<(LV()>1?4:3)){const k=n+rnd(5)-2;if(k>=1&&k<=16)opts.add(k)}
     zone.innerHTML=`<div class="count-box">${Array(n).fill(`<span>${e}</span>`).join("")}</div><div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;
     const g=zone.lastChild;shuffle([...opts]).forEach(k=>{const b=document.createElement("button");b.className="pick num";b.textContent=k;
       b.onclick=()=>{if(k===n){b.classList.add("good");yay();round++;if(round===total)secure(),setTimeout(()=>win("compte"),700);else timers.push(setTimeout(next,900))}else wrong(b,"Essaie encore, recompte doucement !")};g.appendChild(b)})}
@@ -1097,27 +1119,37 @@ function compte(){
 function peche(){
   const zone=openPanel("La pêche","Attrape 8 poissons en cliquant dessus !");
   zone.innerHTML=`<div class="pond">${Array.from({length:6},(_,i)=>`<span class="bubbles" style="left:${8+i*16}%;animation-delay:${-i*.7}s"></span>`).join("")}</div>`;
-  const pond=zone.firstChild;let caught=0;const goal=8;setDots(0,goal);
+  const pond=zone.firstChild;let caught=0;const goal=[8,10,14][LV()];setDots(0,goal);
   function spawn(){if(caught>=goal)return;const b=document.createElement("button");b.className="swim";b.setAttribute("aria-label","Poisson");b.textContent=["🐟","🐠","🐡"][rnd(3)];
     const fromLeft=Math.random()<.5;b.style.top=(5+rnd(68))+"%";b.style.transform=fromLeft?"scaleX(-1)":"";pond.appendChild(b);
-    const anim=b.animate([{left:fromLeft?"-15%":"105%"},{left:fromLeft?"105%":"-15%"}],{duration:5200+rnd(2500),easing:"linear",fill:"forwards"});anim.onfinish=()=>b.remove();
+    const anim=b.animate([{left:fromLeft?"-15%":"105%"},{left:fromLeft?"105%":"-15%"}],{duration:([5200,4400,3300][LV()])+rnd(2200),easing:"linear",fill:"forwards"});anim.onfinish=()=>b.remove();
     b.onclick=()=>{if(b.classList.contains("caught"))return;anim.pause();b.classList.add("caught");beep([700,1000],.08);caught++;setDots(caught,goal);setTimeout(()=>b.remove(),400);if(caught===goal)secure(),setTimeout(()=>win("peche"),600)}}
   spawn();timers.push(setInterval(()=>{if(pond.querySelectorAll(".swim:not(.caught)").length<4)spawn()},900))}
 function intrus(){
   const zone=openPanel("L'intrus","Trouve celui qui n'est pas comme les autres !");
-  const families=[["🍎","🍌","🍐","🍓","🍇","🍒"],["🐶","🐱","🐰","🐻","🐸","🐷"],["🚗","🚌","🚲","🚂","🚀","⛵"],["⚽","🏀","🎾","🏈","🏐"],["🐟","🐙","🦀","🐬","🐳"]];let round=0;const total=3;
+  const families=[["🍎","🍌","🍐","🍓","🍇","🍒"],["🐶","🐱","🐰","🐻","🐸","🐷"],["🚗","🚌","🚲","🚂","🚀","⛵"],["⚽","🏀","🎾","🏈","🏐"],["🐟","🐙","🦀","🐬","🐳"]];let round=0;const total=[3,4,5][LV()];
   function next(){setDots(round,total);sayP("Lequel n'est pas de la même famille ?");const a=rnd(families.length);let b;do b=rnd(families.length);while(b===a);
     const same=shuffle(families[a]).slice(0,3),odd=families[b][rnd(families[b].length)];
     zone.innerHTML=`<div class="grid" style="grid-template-columns:repeat(2,1fr);max-width:400px"></div>`;const g=zone.firstChild;
     shuffle([...same,odd]).forEach(x=>{const btn=document.createElement("button");btn.className="pick";btn.textContent=x;
       btn.onclick=()=>{if(x===odd){btn.classList.add("good");yay();round++;if(round===total)secure(),setTimeout(()=>win("intrus"),700);else timers.push(setTimeout(next,900))}else wrong(btn,"Non, celui-là va avec les autres. Cherche encore !")};g.appendChild(btn)})}
   next()}
+const HARD=[["Qu'est-ce qui monte et ne redescend jamais ?","🎂",["🎂","🎈","🚀"]],
+  ["Plus il est chaud, plus il est frais. Qui est-ce ?","🥖",["🥖","☕","🍦"]],
+  ["Je suis plein de trous, pourtant je retiens l'eau. Qui suis-je ?","🧽",["🧽","🧀","🥅"]],
+  ["Je cours sans jamais marcher, j'ai un lit mais je ne dors jamais. Qui suis-je ?","🏞️",["🏞️","🐆","🛏️"]],
+  ["J'ai un cou mais pas de tête, et je porte un bouchon. Qui suis-je ?","🍾",["🍾","🦒","👕"]],
+  ["Plus on m'enlève de terre, plus je deviens grand. Qui suis-je ?","🕳️",["🕳️","🏔️","🌳"]],
+  ["J'ai des aiguilles mais je ne pique pas, et je tourne toute la journée. Qui suis-je ?","🕰️",["🕰️","🌵","🦔"]],
+  ["Je réponds quand on m'appelle dans la montagne, mais je ne fais que répéter. Qui suis-je ?","🏔️",["🏔️","📞","🦜"]],
+  ["Je suis à toi, mais les autres m'utilisent plus souvent que toi. Qui suis-je ?","🏷️",["🏷️","👟","🎒"]]];
 function enigme(){
   const zone=openPanel("Les devinettes",`Bonjour ${cap()}, je suis Mamie Caret, la tortue gardienne. Écoute bien mes devinettes !`);
   const riddles=shuffle([["Je suis jaune et je brille dans le ciel. Qui suis-je ?","🌞",["🌞","🌙","🌧️"]],["J'ai huit bras et je vis dans la mer. Qui suis-je ?","🐙",["🐙","🦀","🐬"]],
     ["Je suis froide et je fonds quand il fait chaud. On me mange en cornet. Qui suis-je ?","🍦",["🍦","🍕","🥕"]],["Je dis miaou et j'aime faire la sieste. Qui suis-je ?","🐱",["🐶","🐱","🐮"]],
     ["J'ouvre les portes et je suis toute petite. Qui suis-je ?","🔑",["🔑","✏️","🥄"]],["Je vole avec des ailes colorées, de fleur en fleur. Qui suis-je ?","🦋",["🦋","🐢","🐍"]],
     ["Je suis rouge, je fais pin-pon et j'éteins le feu. Qui suis-je ?","🚒",["🚒","🚜","🚕"]],["Je marche de côté sur la plage et j'ai deux pinces. Qui suis-je ?","🦀",["🦀","🐌","🐝"]]]).slice(0,3);
+  if(LV()===2)riddles.splice(0,3,...shuffle(HARD.slice(0,5)).slice(0,3));
   let round=0;zone.innerHTML=`<div class="keeper"><b>🐢</b><span>Mamie Caret</span></div><div class="q" style="width:100%;display:flex;justify-content:center"></div>`;const qz=zone.lastChild;
   function next(){setDots(round,3);const [q,ans,opts]=riddles[round];if(round===0)timers.push(setTimeout(()=>sayP(q),4200));else sayP(q);
     qz.innerHTML=`<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;const g=qz.firstChild;
@@ -1136,6 +1168,7 @@ function vigie(){
     ["Je suis blanche et froide, je tombe du ciel en hiver, et avec moi on fait des bonhommes tout l'après-midi entier. Qui suis-je ?","❄️",["❄️","🌧️","☁️"]],
     ["On me casse avant de me manger, je suis dans le gâteau et dans l'omelette du dîner. Qui suis-je ?","🥚",["🥚","🍎","🧀"]],
     ["Je suis une maison qui flotte sur l'eau, j'ai des voiles et un drapeau. Qui suis-je ?","⛵",["⛵","🏠","🚗"]]]).slice(0,3);
+  if(LV()===2)riddles.splice(0,3,...shuffle(HARD.slice(5)).slice(0,3));
   let round=0;zone.innerHTML=`<div class="keeper"><b>🦉</b><span>Maître Hulotte</span></div><div class="q" style="width:100%;display:flex;justify-content:center"></div>`;const qz=zone.lastChild;
   function next(){setDots(round,3);const [q,ans,opts]=riddles[round];if(round===0)timers.push(setTimeout(()=>sayP(q),6500));else sayP(q);
     qz.innerHTML=`<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;const g=qz.firstChild;
@@ -1249,7 +1282,7 @@ function jarres(){
     roomTorch(r,-3.2,2.3,-4.98,0,1);roomTorch(r,3.2,2.3,-4.98,0,1);roomTorch(r,-5.98,2.3,1.5,1,0,.7);
     const spot=new THREE.SpotLight(0xffe2b8,1.6,20,.5,.6,1.5);spot.position.set(0,5,3);spot.target.position.set(0,1,0);spot.castShadow=true;spot.shadow.mapSize.set(1024,1024);r.scene.add(spot,spot.target);
     setBase(r,new THREE.Vector3(0,3.1,6.2),new THREE.Vector3(0,1.3,0),1.5);return r});
-  const rounds=[[3,3,950],[4,4,850],[4,6,760]],tx=jarTexture();let round=0;
+  const rounds=[[[3,3,950],[4,4,850],[4,6,760]],[[3,4,850],[4,5,760],[4,7,680]],[[4,5,720],[5,7,620],[5,9,540]]][LV()],tx=jarTexture();let round=0;
   const S=room.scene,jars=[],key=keyMesh(),crab=crabMesh();key.visible=false;crab.visible=false;S.add(key,crab);
   let canPick=false,anims=[];
   const anim=(ms,fn)=>new Promise(res=>anims.push({t0:performance.now(),ms,fn,res}));
@@ -1286,7 +1319,7 @@ function jarres(){
 
 /* ---------- Le pont de corde (salle 3D, vue à la première personne) ---------- */
 function pont(){
-  const N=10,Z0=8.2,Z1=-8.2,SAG=1.1;
+  const N=[10,12,14][LV()],Z0=8.2,Z1=-8.2,SAG=1.1,ZONE=[.3,.27,.21][LV()];
   const yAt=z=>-Math.sin((Z0-z)/(Z0-Z1)*Math.PI)*SAG;
   let bridge;
   const zone=openRoom("Le pont de corde","Traverse le pont ! Clique quand l'aiguille est dans le vert pour faire un pas.",()=>{
@@ -1313,8 +1346,8 @@ function pont(){
     const kl=new THREE.PointLight(0xffc040,2,7,2);kl.position.set(0,2.2,Z1-1.5);S.add(kl);
     roomTorch(r,-7.95,1.6,Z0+1.5,1,0);roomTorch(r,7.95,1.6,Z0+1.5,-1,0);roomTorch(r,-7.95,1.6,Z1-1.5,1,0);roomTorch(r,7.95,1.6,Z1-1.5,-1,0);
     r.camera.position.set(0,1.5,Z0+1.4);r.camera.lookAt(0,.8,Z1);return r});
-  zone.innerHTML=`<div class="balance"><div class="green"></div><div class="needle"></div></div><button class="big step">👣 Un pas !</button>`;
-  const needle=zone.querySelector(".needle");let step=0,shown=0,wob=0,speed=2.1,t0=performance.now(),fin=false,look=0;
+  zone.innerHTML=`<div class="balance"><div class="green" style="left:${50-ZONE*46}%;width:${ZONE*92}%"></div><div class="needle"></div></div><button class="big step">👣 Un pas !</button>`;
+  const needle=zone.querySelector(".needle");let step=0,shown=0,wob=0,speed=[2.1,2.4,2.9][LV()],t0=performance.now(),fin=false,look=0;
   const zAt=s=>Z0+.6-(Z0-Z1+1.2)*s/N;
   const npos=()=>Math.sin((performance.now()-t0)/1000*speed);
   room.update=(dt,t)=>{flicker(room,t);room.water.offset.set(t*.02,t*.015);room.key.rotation.y+=dt*1.6;
@@ -1324,7 +1357,7 @@ function pont(){
     look+=((step>=N?-.05:-.22)-look)*dt*2;c.lookAt(sway*.3,c.position.y+look-(.35+wob*.3*Math.sin(t*9)),z-6);c.rotateZ(sway*.12+wob*Math.sin(t*14)*.1);
     needle.style.left=(50+npos()*46)+"%"};
   function act(){if(fin)return;
-    if(Math.abs(npos())<.3){step++;beep([300,240],.06,"triangle",.08);creak();speed+=.16;
+    if(Math.abs(npos())<ZONE){step++;beep([300,240],.06,"triangle",.08);creak();speed+=.16;
       if(step>=N){fin=true;yay();secure(),setTimeout(()=>win("pont"),1200)}
       else if(step===Math.floor(N/2))sayP("Tu es à la moitié ! Ne regarde pas en bas…")}
     else{wob=1;nope();if(step>0)step--;sayP("Oups, le pont bouge ! Attends que l'aiguille soit dans le vert.")}}
@@ -1343,7 +1376,7 @@ function explorer(){const g=new THREE.Group();
   const L=new THREE.PointLight(0xffb060,1.6,6,2);L.position.set(.3,.9,.2);g.add(L);
   g.traverse(o=>{if(o.isMesh)o.castShadow=true});return g}
 function labyrinthe(){
-  const W=9,H=6,CS=2;let maze,pos,keyAt,time,timer,walls,hero,key,heroT={x:0,z:0,ry:0};
+  const W=[9,10,12][LV()],H=[6,7,8][LV()],CS=2;let maze,pos,keyAt,time,timer,walls,hero,key,heroT={x:0,z:0,ry:0};
   const cx=x=>(x-(W-1)/2)*CS,cz=y=>(y-(H-1)/2)*CS;
   const zone=openRoom("Le labyrinthe","Guide l'explorateur jusqu'à la clé avant la fin du sablier ! Utilise les flèches.",()=>{
     const r=newRoom({fov:40,hemi:.5,fogNear:30,fogFar:80});roomBox(r,W*CS+8,H*CS+8,3,0,{ceiling:false});
@@ -1351,7 +1384,7 @@ function labyrinthe(){
     roomTorch(r,-(W*CS+8)/2+.02,2.5,-3,1,0);roomTorch(r,(W*CS+8)/2-.02,2.5,-3,-1,0);roomTorch(r,-(W*CS+8)/2+.02,2.5,4,1,0);roomTorch(r,(W*CS+8)/2-.02,2.5,4,-1,0);
     const sun=new THREE.DirectionalLight(0xffe0b8,.7);sun.position.set(-6,14,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
     Object.assign(sun.shadow.camera,{left:-12,right:12,top:10,bottom:-10});sun.shadow.camera.updateProjectionMatrix();r.scene.add(sun);
-    setBase(r,new THREE.Vector3(0,15.5,11.5),new THREE.Vector3(0,0,.8),1.5);return r});
+    setBase(r,new THREE.Vector3(0,15.5*W/9,11.5*W/9),new THREE.Vector3(0,0,.8),1.5);return r});
   zone.innerHTML=`    <div class="pad"><button data-d="up" aria-label="Haut">⬆️</button><button data-d="left" aria-label="Gauche">⬅️</button><button data-d="down" aria-label="Bas">⬇️</button><button data-d="right" aria-label="Droite">➡️</button></div>`;
   const S=room.scene,wallMatL=stoneMat(.35,.25,"#e2d2b0");
   function gen(){const cells=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++)cells.push({x,y,w:[1,1,1,1],v:0});
@@ -1428,7 +1461,7 @@ function eau(){
     if(lvl>55&&said<1){said=1;sayP("Encore ! Plus vite !")}if(lvl>80&&said<2){said=2;sayP("Presque ! Continue !")}
     if(lvl>=92){doneW=true;yay();secure(),setTimeout(()=>win("eau"),1600)}}
   room.update=(dt,t)=>{flicker(room,t);
-    if(started&&!doneW)lvl=Math.max(4,lvl-dt*4.2);
+    if(started&&!doneW)lvl=Math.max(4,lvl-dt*[4.2,5.2,6.6][LV()]);
     const h=Math.max(.05,lvl/100*TH);water.scale.y=h;water.position.y=.25+h/2;wtop.position.y=.25+h+.002;wtop.material.normalMap.offset.set(t*.1,t*.07);
     lv*=Math.pow(.02,dt);lever.rotation.z=-.5+lv*.9;
     if(doneW)keyOut=Math.min(1,keyOut+dt*.8);hatch.userData.lid.rotation.z=keyOut*1.9;
@@ -1455,11 +1488,11 @@ function runTreasure(){
   timers.push(setInterval(()=>{time--;clock2.textContent="⏳ "+time;
     if(time===5)narrate("Plus que cinq secondes !");
     if(time<=0){timers.forEach(t=>{clearInterval(t);clearTimeout(t)});timers=[];confetti("🪙💎⭐👑");fanfare();victory();musicLevel(.18,"theme");clock2.textContent="";
-      sayP(`Tu as ramassé ${n} pièces d'or ! Tu es la reine du fort !`,`Temps écoulé ! Bravo ${cap()} !`);
+      sayP(`Vous avez ramassé ${n} pièces d'or ! Vous êtes les rois du fort !`,`Temps écoulé ! Bravo ${teamNames()} !`);
       vault.outerHTML=`<div style="font-size:110px;animation:bob 1.4s infinite;filter:drop-shadow(0 0 20px #ffc62b)">👑</div><button class="big" id="again">Rejouer</button>`;
       $("again").onclick=()=>{done=[];store("fortDefis",done);gateWant=0;closePanel().then(()=>say("C'est reparti ! Choisis une porte."))}}},1000))}
 
-$("capName").textContent=cap();
+updatePlate();
 (document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,2500))]):Promise.resolve()).then(()=>setTimeout(()=>{try{init()}catch(err){showError(err.message);console.error(err)}},30));
 </script>
 </body>
