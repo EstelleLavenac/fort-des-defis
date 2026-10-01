@@ -55,6 +55,17 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
 @media (max-width:640px){.hint{display:none}}
 @media (max-width:900px){.right{top:calc(78px + env(safe-area-inset-top,0px));max-width:calc(100% - 32px)}}
 @keyframes bob{50%{transform:translateY(-8px) rotate(-4deg)}}
+.prison{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(rgba(10,6,3,.35),rgba(10,6,3,.35)),
+  repeating-linear-gradient(90deg,transparent 0 9%,#2a2a30 9% 10.4%,#6c6c78 10.4% 11%,#1c1c22 11% 12%,transparent 12% 18%),
+  linear-gradient(transparent 22%,#2a2a30 22% 24.5%,transparent 24.5% 76%,#2a2a30 76% 78.5%,transparent 78.5%);
+  animation:bars .7s cubic-bezier(.6,0,.9,.4) both}
+.prison.up{animation:barsUp 1.4s cubic-bezier(.5,0,.3,1) both}
+@keyframes bars{from{transform:translateY(-100%)}to{transform:none}}
+@keyframes barsUp{from{transform:none}to{transform:translateY(-105%)}}
+.panel{z-index:1}
+.lost.free{border-color:#2fae5b;background:rgba(10,40,20,.85)}
+
 .sablier{position:absolute;left:8px;top:8px;width:62px;display:flex;flex-direction:column;align-items:center;z-index:2;pointer-events:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
 .sablier canvas{width:62px;height:98px}
 .sablier b{font-family:var(--display);font-size:18px;color:var(--wood);background:rgba(255,246,223,.92);border-radius:999px;padding:1px 8px;margin-top:-2px}
@@ -1010,17 +1021,38 @@ function startSablier(id){
     if(!s.warned&&left<=10){s.warned=true;narrate("Attention, le sablier se vide !")}
     if(left<=0){clearInterval(s.iv);lose(id)}},100);timers.push(s.iv);drawSab(cv,1,0,false);lab.textContent=total+" s"}
 function secure(){if(sab){sab.secured=true;sab.el.classList.add("safe")}}
+const PRISON=[
+  ["Je suis le roi des animaux, j'ai une crinière et je rugis très fort. Qui suis-je ?","🦁",["🦁","🐯","🐱"]],
+  ["Je tombe des arbres en automne, je suis jaune, rouge ou marron. Qui suis-je ?","🍂",["🍂","🌸","🍎"]],
+  ["On m'enroule autour du cou quand il fait froid. Qui suis-je ?","🧣",["🧣","👟","🎩"]],
+  ["J'ai deux roues et des pédales, on me fait avancer avec les pieds. Qui suis-je ?","🚲",["🚲","🚗","🛴"]],
+  ["Les abeilles me fabriquent, je suis doux et sucré. Qui suis-je ?","🍯",["🍯","🧀","🍞"]],
+  ["Je brille dans le ciel la nuit et je change de forme chaque soir. Qui suis-je ?","🌙",["🌙","☀️","🌈"]],
+  ["J'ai un très long cou et des taches, je mange les feuilles tout en haut des arbres. Qui suis-je ?","🦒",["🦒","🐘","🐴"]],
+  ["Je suis rond, on me lance, on me tape avec le pied pour marquer un but. Qui suis-je ?","⚽",["⚽","🎈","🍊"]]];
+let lastPrison=-1;
 function lose(id){
   if(!sab||sab.secured)return;
   stopAll();if(room){room.click=null;room.hover=null}
   slam();sadSting();
+  const bars=document.createElement("div");bars.className="prison";overlay.insertBefore(bars,overlay.firstChild);
+  let qi;do qi=rnd(PRISON.length);while(qi===lastPrison);lastPrison=qi;const [q,ans,opts]=PRISON[qi];
   const zone=panel.querySelector(".zone");panel.querySelector(".dots").innerHTML="";
-  zone.innerHTML=`<div class="lost"><span>⌛</span><p>Le sablier est vide…<br>Pas de clé cette fois !</p></div><button class="big">Retour dans la cour</button>`;
-  sayP("Ce n'est pas grave ! La porte s'est refermée, mais tu pourras retenter ta chance.","Le temps est écoulé !");
-  zone.querySelector(".big").onclick=closePanel}
+  zone.innerHTML=`<div class="lost"><span>⛓️</span><p>Le sablier est vide…<br><b>Tu es prisonnier !</b></p></div>
+    <div class="keeper"><b>🦉</b><span>Maître Hulotte</span></div><div class="grid prisonq" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;
+  sayP("Pour sortir de prison, réponds à l'énigme de Maître Hulotte. "+q,"Le temps est écoulé ! Tu es prisonnier !");
+  const g=zone.querySelector(".prisonq");let freed=false;
+  shuffle(opts).forEach(x=>{const b=document.createElement("button");b.className="pick";b.textContent=x;
+    b.onclick=()=>{if(freed)return;
+      if(x===ans){freed=true;b.classList.add("good");yay();bars.classList.add("up");setTimeout(()=>bars.remove(),1600);
+        zone.innerHTML=`<div class="lost free"><span>🔓</span><p><b>Tu es libre !</b><br>Mais pas de clé cette fois.</p></div><button class="big">Retour dans la cour</button>`;
+        sayP("Bravo, bonne réponse ! Tu pourras retenter cette épreuve quand tu veux.","Libéré !");
+        zone.querySelector(".big").onclick=()=>{bars.remove();closePanel()}}
+      else{b.classList.remove("bad");void b.offsetWidth;b.classList.add("bad");nope();sayP("Ce n'est pas ça… Réécoute bien : "+q)}};
+    g.appendChild(b)})}
 
 async function closePanel(){
-  stopAll();
+  stopAll();document.querySelectorAll('.prison').forEach(e=>e.remove());
   if(room){$("fade").classList.add("on");closeRoom();renderer.domElement.style.cursor=""}
   overlay.hidden=true;try{speechSynthesis.cancel()}catch(e){}
   CHALLENGES.forEach(c=>{if(!done.includes(c.id)){const d=doors[c.id],s=d.openAmt;if(s>0)tween(700,k=>{d.openAmt=s*(1-k)})}});
