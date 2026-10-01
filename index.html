@@ -161,6 +161,7 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
 .namecard label{font-size:clamp(17px,2.8vw,21px);text-align:center}
 .namecard input{font-size:28px;font-weight:900;text-align:center;border:3px solid #9c7a52;border-radius:14px;padding:8px 12px;width:100%;box-sizing:border-box;background:#fffaf0}
 .loading{font-size:18px;color:#6b4a2b}
+.err small{display:block;margin-top:8px;font-size:12px;color:#7a5a3a;word-break:break-word}.err p{margin:6px 0 0}.err .big{margin-top:12px;font-size:20px;padding:10px 22px}
 .err{position:fixed;left:16px;right:16px;top:50%;transform:translateY(-50%);z-index:50;background:#fff;border:4px solid var(--no);border-radius:16px;padding:16px;font-size:16px;max-width:560px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,.3)}
 
 .big{font-family:var(--display);font-size:clamp(22px,3.6vw,30px);border:0;border-radius:999px;padding:14px 32px;background:linear-gradient(#ffe07a,#f5b400);box-shadow:0 6px 0 var(--gold-d),0 10px 20px rgba(0,0,0,.25);letter-spacing:1px;color:var(--ink)}
@@ -270,13 +271,22 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-function showError(msg){const d=document.createElement("div");d.className="err";d.textContent="Oups, le jeu 3D n'a pas pu démarrer : "+msg;document.body.appendChild(d)}
-window.addEventListener("error",e=>{if(!window.__errShown){window.__errShown=1;showError(e.message||"erreur inconnue")}});
+let gameStarted=false;
+function showError(msg,detail,canGo){if(document.querySelector(".err"))return;const d=document.createElement("div");d.className="err";
+  d.innerHTML=`<b>${canGo?"Oups, petit souci dans le jeu.":"Oups, le jeu 3D n'a pas pu démarrer."}</b><p></p><small></small>${canGo?'<button class="big errgo">Continuer à jouer</button>':""}`;
+  d.querySelector("p").textContent=msg;d.querySelector("small").textContent=detail||"";document.body.appendChild(d);
+  const b=d.querySelector(".errgo");if(b)b.onclick=()=>{d.remove();try{if(!overlay.hidden&&!room)closePanel()}catch(_){}}}
+function errDetail(err,e){const s=(err&&err.stack||"").split("\n").slice(0,3).join(" ← ").replace(/https?:\/\/[^ )]+\//g,"");return (s||(e&&e.filename?e.filename.split("/").pop()+":"+e.lineno+":"+e.colno:"")).slice(0,300)}
+window.addEventListener("error",e=>{
+  const own=!e.filename||e.filename===location.href.split("#")[0]||e.filename.startsWith(location.origin)&&!/cdn|jsdelivr|cdnjs/.test(e.filename);
+  try{const log=JSON.parse(localStorage.getItem("fortErreurs")||"[]");log.push({t:new Date().toISOString(),m:e.message,d:errDetail(e.error,e)});localStorage.setItem("fortErreurs",JSON.stringify(log.slice(-10)))}catch(_){}
+  if(gameStarted&&!own)return;
+  showError(e.message||"erreur inconnue",errDetail(e.error,e),gameStarted)});
 
 function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function store(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 const rnd=n=>Math.floor(Math.random()*n);
-const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const shuffle=a=>{a=Array.isArray(a)?[...a]:a&&typeof a!=="string"&&a[Symbol.iterator]?[...a]:[];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
 const TYPES={memo:{icon:"🃏",name:"Les cartes"},compte:{icon:"🐚",name:"Les coquillages"},intrus:{icon:"🔍",name:"L'intrus"},enigme:{icon:"🐢",name:"Les devinettes"},
   labyrinthe:{icon:"🧭",name:"Le labyrinthe"},jarres:{icon:"🏺",name:"Les jarres"},pont:{icon:"🌉",name:"Le pont de corde"},eau:{icon:"💧",name:"La cellule d'eau"},
   peche:{icon:"🎣",name:"La pêche"},cloches:{icon:"🔔",name:"Les cloches"},ombres:{icon:"🔦",name:"Les ombres"},crabes:{icon:"🦀",name:"Les crabes"}};
@@ -987,7 +997,7 @@ function init(){
   setupInput();
   addEventListener("resize",sizeAll);
   frame();upgradePhoto();
-  $("goBtn").disabled=false;$("loading").hidden=true}
+  $("goBtn").disabled=false;$("loading").hidden=true;gameStarted=true}
 
 /* ================= INTRO ================= */
 function renderTeam(){const box=$("teamRows");box.innerHTML="";
@@ -1212,7 +1222,7 @@ function enigme(){
   const zone=openPanel("Les devinettes",`Bonjour ${cap()}, je suis Mamie Caret, la tortue gardienne. Écoute bien mes devinettes !`);
   const riddles=pickRiddles(LV()===2?HARD:DEV,3);
   let round=0;zone.innerHTML=`<div class="keeper"><b>🐢</b><span>Mamie Caret</span></div><div class="q" style="width:100%;display:flex;justify-content:center"></div>`;const qz=zone.lastChild;
-  function next(){setDots(round,3);const [q,ans,opts]=riddles[round];if(round===0)timers.push(setTimeout(()=>sayP(q),4200));else sayP(q);
+  function next(){setDots(round,3);const [q,ans,opts]=riddles[round]||riddles[0];if(round===0)timers.push(setTimeout(()=>sayP(q),4200));else sayP(q);
     qz.innerHTML=`<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;const g=qz.firstChild;
     shuffle(opts).forEach(x=>{const b=document.createElement("button");b.className="pick";b.textContent=x;
       b.onclick=()=>{if(x===ans){b.classList.add("good");yay();round++;if(round===3)secure(),setTimeout(()=>win("enigme"),700);else timers.push(setTimeout(next,1000))}else wrong(b,"Pas tout à fait ! "+q)};g.appendChild(b)})}
@@ -1221,7 +1231,7 @@ function vigie(){
   const zone=openPanel("L'énigme de la vigie",`Hou hou ! Bonjour ${cap()}. Je suis Maître Hulotte, le gardien de la vigie. Écoute bien mes énigmes en rimes !`);
   const riddles=pickRiddles(LV()===2?HARD:RIME,3);
   let round=0;zone.innerHTML=`<div class="keeper"><b>🦉</b><span>Maître Hulotte</span></div><div class="q" style="width:100%;display:flex;justify-content:center"></div>`;const qz=zone.lastChild;
-  function next(){setDots(round,3);const [q,ans,opts]=riddles[round];if(round===0)timers.push(setTimeout(()=>sayP(q),6500));else sayP(q);
+  function next(){setDots(round,3);const [q,ans,opts]=riddles[round]||riddles[0];if(round===0)timers.push(setTimeout(()=>sayP(q),6500));else sayP(q);
     qz.innerHTML=`<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;const g=qz.firstChild;
     shuffle(opts).forEach(x=>{const b=document.createElement("button");b.className="pick";b.textContent=x;
       b.onclick=()=>{if(x===ans){b.classList.add("good");yay();round++;if(round===3)secure(),setTimeout(()=>win("vigie"),700);else timers.push(setTimeout(next,1000))}else wrong(b,"Hou hou, ce n'est pas ça ! Réécoute bien : "+q)};g.appendChild(b)})}
@@ -1599,7 +1609,7 @@ function runTreasure(){
       session.finished=true;store("fortSession",session);$("again").textContent="🔄 Nouvelle partie";$("again").onclick=startNewSession}},1000))}
 
 updatePlate();
-(document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,2500))]):Promise.resolve()).then(()=>setTimeout(()=>{try{init()}catch(err){showError(err.message);console.error(err)}},30));
+(document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,2500))]):Promise.resolve()).then(()=>setTimeout(()=>{try{init()}catch(err){showError(err.message,errDetail(err));console.error(err)}},30));
 </script>
 </body>
 </html>
