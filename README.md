@@ -6,6 +6,12 @@ On arrive en bateau devant un fort posé sur la mer, puis on marche soi-même su
 
 ## Les épreuves
 
+À chaque nouvelle partie, les portes de la cour reçoivent 9 épreuves tirées au sort parmi 12, et les énigmes sont choisies dans une grande réserve : on ne retombe pas sur les mêmes tant qu'on ne les a pas toutes vues. Le bouton « Nouvelle partie » au départ relance une partie toute neuve.
+
+- **Les cloches** : rejouer la mélodie des cloches dans le bon ordre.
+- **Les ombres** : retrouver l'ombre qui correspond à l'objet.
+- **Les crabes** : attraper les crabes quand ils sortent du sable.
+
 - **Les cartes** : retrouver les paires.
 - **Les coquillages** : compter jusqu'à 9.
 - **La pêche** : attraper 8 poissons.
@@ -38,6 +44,6 @@ La progression (les clés gagnées et le prénom du capitaine) est gardée dans 
 
 ## Technique
 
-Un seul fichier HTML, sans installation. La 3D utilise [three.js](https://threejs.org) r128 chargé depuis cdnjs. Les textures, les sons et la mer sont générés par le code.
+Un seul fichier HTML, sans installation. La 3D utilise [three.js](https://threejs.org) r128. Les textures de pierre et de bois et le ciel sont des photos libres de droits (CC0) de [Poly Haven](https://polyhaven.com), chargées au lancement ; si elles ne sont pas disponibles, le jeu utilise des textures dessinées par le code. Les sons, la musique et la mer sont générés par le code.
 
 Jeu original créé par Estelle Lavenac.

@@ -54,6 +54,19 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
 @media (max-width:640px){.hint{display:none}}
 @media (max-width:900px){.right{top:calc(78px + env(safe-area-inset-top,0px));max-width:calc(100% - 32px)}}
 @keyframes bob{50%{transform:translateY(-8px) rotate(-4deg)}}
+.bells{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;width:min(360px,100%)}
+.bell{aspect-ratio:1;border:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--h),var(--c) 60%);box-shadow:0 8px 0 rgba(0,0,0,.3),inset 0 -8px 14px rgba(0,0,0,.25);font-size:clamp(42px,8vw,60px);transition:transform .1s}
+.bell.on{transform:scale(1.08) rotate(-8deg);box-shadow:0 0 0 8px rgba(255,255,255,.7),0 0 40px 10px var(--h)}
+.target{font-size:clamp(80px,14vw,120px);line-height:1;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25));animation:bob 2s ease-in-out infinite}
+.pick.shadow span{filter:brightness(0) opacity(.85)}
+.holes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:min(420px,100%)}
+.hole{position:relative;aspect-ratio:1.2;border:0;border-radius:50%;background:radial-gradient(ellipse at 50% 60%,#5a4126 0 38%,#d9bf8a 40%,#e8d3a3 70%);overflow:hidden;box-shadow:inset 0 6px 12px rgba(0,0,0,.25)}
+.hole .cr{position:absolute;left:50%;bottom:-70%;transform:translateX(-50%);font-size:clamp(40px,8vw,58px);transition:bottom .18s ease-out;pointer-events:none}
+.hole.up .cr{bottom:18%}
+.hole.got{background:radial-gradient(ellipse at 50% 60%,#2fae5b 0 38%,#d9bf8a 40%,#e8d3a3 70%)}
+.intro .row2{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.newgame{border:0;border-radius:999px;padding:10px 18px;background:#fffaf0;box-shadow:0 4px 0 #a88962;font-size:17px;font-weight:900}
+
 .team{display:flex;flex-direction:column;gap:8px;width:100%}
 .prow{display:flex;gap:6px;align-items:center}
 .prow input{flex:1;min-width:0;font-size:22px!important;padding:6px 10px!important}
@@ -236,6 +249,7 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
     <div class="team" id="teamRows"></div>
     <button type="button" class="addp" id="addPlayer">+ Ajouter un joueur</button>
     <button class="big" type="submit" id="goBtn" disabled>⛵ En route !</button>
+    <div class="row2"><button type="button" class="newgame" id="newGame" hidden>🔄 Nouvelle partie (nouvelles épreuves)</button></div>
     <span class="loading" id="loading">Le fort se prépare…</span>
   </form>
 </div>
@@ -250,29 +264,29 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 function showError(msg){const d=document.createElement("div");d.className="err";d.textContent="Oups, le jeu 3D n'a pas pu démarrer : "+msg;document.body.appendChild(d)}
 window.addEventListener("error",e=>{if(!window.__errShown){window.__errShown=1;showError(e.message||"erreur inconnue")}});
 
-const CHALLENGES=[
-  {id:"memo",icon:"🃏",name:"Les cartes",s:9},
-  {id:"compte",icon:"🐚",name:"Les coquillages",s:29},
-  {id:"intrus",icon:"🔍",name:"L'intrus",s:47.42},
-  {id:"vigie",icon:"🦉",name:"L'énigme de la vigie",tower:true},
-  {id:"enigme",icon:"🐢",name:"Les devinettes",s:66.27},
-  {id:"labyrinthe",icon:"🧭",name:"Le labyrinthe",s:80.2},
-  {id:"jarres",icon:"🏺",name:"Les jarres",s:87.2},
-  {id:"pont",icon:"🌉",name:"Le pont de corde",s:102.2},
-  {id:"eau",icon:"💧",name:"La cellule d'eau",s:109.2},
-  {id:"peche",icon:"🎣",name:"La pêche",s:132.55},
-];
-let done=load("fortDefis",[]),team=load("fortEquipe",[{name:"Lia",age:6},{name:"Roméo",age:7},{name:"Lou",age:10}]),turn=load("fortTour",0),resolved=false;
-let gateWant=done.length===CHALLENGES.length?1:0;
 function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function store(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 const rnd=n=>Math.floor(Math.random()*n);
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const TYPES={memo:{icon:"🃏",name:"Les cartes"},compte:{icon:"🐚",name:"Les coquillages"},intrus:{icon:"🔍",name:"L'intrus"},enigme:{icon:"🐢",name:"Les devinettes"},
+  labyrinthe:{icon:"🧭",name:"Le labyrinthe"},jarres:{icon:"🏺",name:"Les jarres"},pont:{icon:"🌉",name:"Le pont de corde"},eau:{icon:"💧",name:"La cellule d'eau"},
+  peche:{icon:"🎣",name:"La pêche"},cloches:{icon:"🔔",name:"Les cloches"},ombres:{icon:"🔦",name:"Les ombres"},crabes:{icon:"🦀",name:"Les crabes"}};
+const SLOTS=[9,29,47.42,66.27,80.2,87.2,102.2,109.2,132.55];
+function newSession(){return{types:shuffle(Object.keys(TYPES)).slice(0,SLOTS.length),started:Date.now()}}
+let session=load("fortSession",null);
+if(!session||session.finished||!Array.isArray(session.types)||session.types.length!==SLOTS.length||session.types.some(id=>!TYPES[id])){
+  session=newSession();store("fortSession",session);store("fortDefis",[]);store("fortTour",0)}
+function startNewSession(){store("fortSession",newSession());store("fortDefis",[]);store("fortTour",0);location.reload()}
+const CHALLENGES=session.types.map((id,i)=>({id,icon:TYPES[id].icon,name:TYPES[id].name,s:SLOTS[i]}));
+CHALLENGES.splice(3,0,{id:"vigie",icon:"🦉",name:"L'énigme de la vigie",tower:true});
+let done=load("fortDefis",[]).filter(id=>CHALLENGES.some(c=>c.id===id)),team=load("fortEquipe",[{name:"Lia",age:6},{name:"Roméo",age:7},{name:"Lou",age:10}]),turn=load("fortTour",0),resolved=false;
+let gateWant=done.length===CHALLENGES.length?1:0;
 const cur=()=>team[((turn%team.length)+team.length)%team.length]||{name:"Capitaine",age:6};
 const cap=()=>cur().name;
 const LV=()=>{const a=cur().age;return a<=6?0:a<=8?1:2};
@@ -476,6 +490,9 @@ const doors={},pickables=[],flags=[],torches=[],gulls=[],walkMeshes=[],obstacles
 let C,maxAniso=4,STONE,ROCK,ROOF,WOOD;
 const matCache={};
 function tex(canvas,rx=1,ry=1,srgb=true){const t=new THREE.CanvasTexture(canvas);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);
+  if(typeof REG!=="undefined"&&canvas){if(STONE&&canvas===STONE.color){REG.stoneC.push(t);if(photoReady)swapImg([t],PHOTO.img.sd,PHOTO.stone.k)}
+    else if(STONE&&canvas===STONE.normal){REG.stoneN.push(t);if(photoReady)swapImg([t],PHOTO.img.sn,PHOTO.stone.k)}
+    else if(canvas===WOOD){REG.woodC.push(t);if(photoReady)swapImg([t],PHOTO.img.wd,PHOTO.wood.k)}}
   if(srgb)t.encoding=THREE.sRGBEncoding;t.anisotropy=maxAniso;return t}
 function stoneMat(rx,ry,tint){const k=rx+"_"+ry+"_"+(tint||"");if(matCache[k])return matCache[k];
   return matCache[k]=new THREE.MeshStandardMaterial({map:tex(STONE.color,rx,ry),normalMap:tex(STONE.normal,rx,ry,false),normalScale:new THREE.Vector2(1.2,1.2),roughness:.92,metalness:0,color:tint?C(tint):new THREE.Color(1,1,1)})}
@@ -882,7 +899,7 @@ function tween(ms,fn,ease){ease=ease||(k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2);r
 function flyTo(pos,look,ms){const p0=camera.position.clone(),l0=curLook.clone();
   return tween(ms,k=>{camera.position.lerpVectors(p0,pos,k);curLook.lerpVectors(l0,look,k);camera.lookAt(curLook)})}
 const TITLES={memo:"Épreuve des cartes !",compte:"Épreuve des coquillages !",peche:"Épreuve de la pêche !",intrus:"Épreuve de l'intrus !",enigme:"Épreuve des devinettes !",vigie:"L'énigme de la vigie !",
-  labyrinthe:"Épreuve du labyrinthe !",eau:"La cellule d'eau !",jarres:"Épreuve des jarres !",pont:"Le pont de corde !"};
+  labyrinthe:"Épreuve du labyrinthe !",cloches:"Épreuve des cloches !",ombres:"Épreuve des ombres !",crabes:"Épreuve des crabes !",eau:"La cellule d'eau !",jarres:"Épreuve des jarres !",pont:"Le pont de corde !"};
 let busy=false,saved=null;
 async function enterDoor(id,after){
   if(busy)return;busy=true;P.target=null;hideMarker();for(const k in keys)keys[k]=false;
@@ -966,7 +983,7 @@ function init(){
   camera.position.set(0,5,430);curLook.set(0,8,0);camera.lookAt(curLook);
   setupInput();
   addEventListener("resize",sizeAll);
-  frame();
+  frame();upgradePhoto();
   $("goBtn").disabled=false;$("loading").hidden=true}
 
 /* ================= INTRO ================= */
@@ -979,6 +996,8 @@ function renderTeam(){const box=$("teamRows");box.innerHTML="";
   $("addPlayer").hidden=team.length>=4}
 $("addPlayer").onclick=()=>{team.push({name:"",age:8});renderTeam();const l=$("teamRows").querySelectorAll("input");l[l.length-1].focus()};
 renderTeam();
+if(done.length){$("goBtn").textContent="⛵ Continuer la partie";$("newGame").hidden=false}
+$("newGame").onclick=startNewSession;
 $("nameForm").onsubmit=async e=>{
   e.preventDefault();if(sailing||arrived||!renderer)return;
   team=team.map(p=>({name:p.name.trim().replace(/^./,c=>c.toUpperCase()),age:p.age})).filter(p=>p.name);if(!team.length)team=[{name:"Capitaine",age:7}];
@@ -1005,7 +1024,7 @@ function openPanel(title,sayText,cave){
   panel.querySelector(".close").onclick=closePanel;overlay.hidden=false;musicLevel(.18);say(sayText,panel.querySelector(".say"),null,true);return panel.querySelector(".zone")}
 function stopAll(){timers.forEach(t=>{clearInterval(t);clearTimeout(t)});timers=[];cleanups.forEach(f=>{try{f()}catch(e){}});cleanups=[];document.querySelectorAll('.sablier').forEach(e=>e.remove());sab=null}
 /* ================= LE SABLIER ================= */
-const TIMES={memo:100,compte:70,peche:50,intrus:70,enigme:100,vigie:110,labyrinthe:80,jarres:110,pont:65,eau:40};
+const TIMES={cloches:95,ombres:60,crabes:50,memo:100,compte:70,peche:50,intrus:70,enigme:100,vigie:110,labyrinthe:80,jarres:110,pont:65,eau:40};
 let sab=null;
 function slam(){const c=actx;if(!c||!noiseBuf)return;const t=c.currentTime;
   const n=c.createBufferSource();n.buffer=noiseBuf;const f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=380;n.connect(f);f.connect(g);g.connect(c.destination);
@@ -1042,22 +1061,13 @@ function startSablier(id){
     if(!s.warned&&left<=10){s.warned=true;narrate("Attention, le sablier se vide !")}
     if(left<=0){clearInterval(s.iv);lose(id)}},100);timers.push(s.iv);drawSab(cv,1,0,false);lab.textContent=total+" s"}
 function secure(){if(sab){sab.secured=true;sab.el.classList.add("safe")}}
-const PRISON=[
-  ["Je suis le roi des animaux, j'ai une crinière et je rugis très fort. Qui suis-je ?","🦁",["🦁","🐯","🐱"]],
-  ["Je tombe des arbres en automne, je suis jaune, rouge ou marron. Qui suis-je ?","🍂",["🍂","🌸","🍎"]],
-  ["On m'enroule autour du cou quand il fait froid. Qui suis-je ?","🧣",["🧣","👟","🎩"]],
-  ["J'ai deux roues et des pédales, on me fait avancer avec les pieds. Qui suis-je ?","🚲",["🚲","🚗","🛴"]],
-  ["Les abeilles me fabriquent, je suis doux et sucré. Qui suis-je ?","🍯",["🍯","🧀","🍞"]],
-  ["Je brille dans le ciel la nuit et je change de forme chaque soir. Qui suis-je ?","🌙",["🌙","☀️","🌈"]],
-  ["J'ai un très long cou et des taches, je mange les feuilles tout en haut des arbres. Qui suis-je ?","🦒",["🦒","🐘","🐴"]],
-  ["Je suis rond, on me lance, on me tape avec le pied pour marquer un but. Qui suis-je ?","⚽",["⚽","🎈","🍊"]]];
 let lastPrison=-1;
 function lose(id){
   if(!sab||sab.secured)return;
   stopAll();resolved=true;if(room){room.click=null;room.hover=null}
   slam();sadSting();
   const bars=document.createElement("div");bars.className="prison";overlay.insertBefore(bars,overlay.firstChild);
-  const pool=LV()===2?HARD:PRISON;let qi;do qi=rnd(pool.length);while(qi===lastPrison&&pool.length>1);lastPrison=qi;const [q,ans,opts]=pool[qi];
+  const [q,ans,opts]=pickRiddles(LV()===2?HARD:DEV.concat(RIME),1)[0];
   const zone=panel.querySelector(".zone");panel.querySelector(".dots").innerHTML="";
   zone.innerHTML=`<div class="lost"><span>⛓️</span><p>Le sablier est vide…<br><b>Tu es prisonnier !</b></p></div>
     <div class="keeper"><b>🦉</b><span>Maître Hulotte</span></div><div class="grid prisonq" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;
@@ -1094,10 +1104,11 @@ function win(id){
   sayP(first?(left?`Bravo ! Plus que ${left} clé${left>1?"s":""} !`:`C'est la dernière clé ! Le trésor t'attend !`):"Bravo, encore réussi !",first?`Une clé pour ${cap()} !`:null);
   zone.querySelector(".big").onclick=closePanel}
 function wrong(b,msg){b.classList.remove("bad");void b.offsetWidth;b.classList.add("bad");nope();sayP(msg)}
-function openChallenge(id){({memo,compte,peche,intrus,enigme,vigie,labyrinthe,eau,jarres,pont})[id]();startSablier(id)}
+function openChallenge(id){({memo,compte,peche,intrus,enigme,vigie,labyrinthe,eau,jarres,pont,cloches,ombres,crabes})[id]();startSablier(id)}
 function memo(){
   const zone=openPanel("Les cartes","Retourne les cartes et trouve les paires pareilles !");
-  const pics=shuffle(["🦀","🐙","🐠","⚓","🐬","🦈","🐳","🏝️"]).slice(0,[4,5,6][LV()]),deck=shuffle([...pics,...pics]);
+  const THEMES=[["🦀","🐙","🐠","⚓","🐬","🦈","🐳","🏝️"],["🦁","🐘","🦒","🐒","🦓","🐼","🐨","🦊"],["🍓","🍌","🍇","🍉","🍍","🍒","🍑","🥝"],["🚂","🚁","⛵","🚀","🚗","🚲","🚒","🛸"],["🎸","🥁","🎺","🎻","🎹","🪕","🎷","📯"]];
+  const pics=shuffle(THEMES[rnd(THEMES.length)]).slice(0,[4,5,6][LV()]),deck=shuffle([...pics,...pics]);
   zone.innerHTML=`<div class="grid" style="grid-template-columns:repeat(${[4,5,4][LV()]},1fr);max-width:${[480,560,480][LV()]}px"></div>`;
   const g=zone.firstChild;let open=[],found=0,lock=false;
   deck.forEach(p=>{const b=document.createElement("button");b.className="card";b.textContent="?";b.setAttribute("aria-label","Carte");
@@ -1108,7 +1119,7 @@ function memo(){
     g.appendChild(b)})}
 function compte(){
   const zone=openPanel("Les coquillages","Compte bien !");
-  const things=[["🐚","coquillages"],["⭐","étoiles de mer"],["🦀","crabes"],["🐟","poissons"],["💎","diamants"]];let round=0;const total=3;
+  const things=shuffle([["🐚","coquillages"],["⭐","étoiles de mer"],["🦀","crabes"],["🐟","poissons"],["💎","diamants"],["🍎","pommes"],["🎈","ballons"],["🐞","coccinelles"],["🌼","fleurs"],["🧁","gâteaux"]]);let round=0;const total=3;
   function next(){setDots(round,total);const [e,w]=things[rnd(things.length)];const n=[2,4,7][LV()]+rnd([6,6,8][LV()]);sayP(`Combien y a-t-il de ${w} ?`);
     let opts=new Set([n]);while(opts.size<(LV()>1?4:3)){const k=n+rnd(5)-2;if(k>=1&&k<=16)opts.add(k)}
     zone.innerHTML=`<div class="count-box">${Array(n).fill(`<span>${e}</span>`).join("")}</div><div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;
@@ -1126,13 +1137,52 @@ function peche(){
   spawn();timers.push(setInterval(()=>{if(pond.querySelectorAll(".swim:not(.caught)").length<4)spawn()},900))}
 function intrus(){
   const zone=openPanel("L'intrus","Trouve celui qui n'est pas comme les autres !");
-  const families=[["🍎","🍌","🍐","🍓","🍇","🍒"],["🐶","🐱","🐰","🐻","🐸","🐷"],["🚗","🚌","🚲","🚂","🚀","⛵"],["⚽","🏀","🎾","🏈","🏐"],["🐟","🐙","🦀","🐬","🐳"]];let round=0;const total=[3,4,5][LV()];
+  const families=[["👕","👖","🧦","🧢","🧣","👗"],["🎸","🎹","🥁","🎺","🎻"],["🌞","🌙","⭐","☁️","🌈"],["🍎","🍌","🍐","🍓","🍇","🍒"],["🐶","🐱","🐰","🐻","🐸","🐷"],["🚗","🚌","🚲","🚂","🚀","⛵"],["⚽","🏀","🎾","🏈","🏐"],["🐟","🐙","🦀","🐬","🐳"]];let round=0;const total=[3,4,5][LV()];
   function next(){setDots(round,total);sayP("Lequel n'est pas de la même famille ?");const a=rnd(families.length);let b;do b=rnd(families.length);while(b===a);
     const same=shuffle(families[a]).slice(0,3),odd=families[b][rnd(families[b].length)];
     zone.innerHTML=`<div class="grid" style="grid-template-columns:repeat(2,1fr);max-width:400px"></div>`;const g=zone.firstChild;
     shuffle([...same,odd]).forEach(x=>{const btn=document.createElement("button");btn.className="pick";btn.textContent=x;
       btn.onclick=()=>{if(x===odd){btn.classList.add("good");yay();round++;if(round===total)secure(),setTimeout(()=>win("intrus"),700);else timers.push(setTimeout(next,900))}else wrong(btn,"Non, celui-là va avec les autres. Cherche encore !")};g.appendChild(btn)})}
   next()}
+
+/* ================= BANQUE D'ÉNIGMES (sans répétition d'une partie à l'autre) ================= */
+const DEV=[
+  ["Je suis jaune et je brille dans le ciel. Qui suis-je ?","🌞",["🌞","🌙","🌧️"]],["J'ai huit bras et je vis dans la mer. Qui suis-je ?","🐙",["🐙","🦀","🐬"]],
+  ["Je suis froide et je fonds quand il fait chaud. On me mange en cornet. Qui suis-je ?","🍦",["🍦","🍕","🥕"]],["Je dis miaou et j'aime faire la sieste. Qui suis-je ?","🐱",["🐶","🐱","🐮"]],
+  ["J'ouvre les portes et je suis toute petite. Qui suis-je ?","🔑",["🔑","✏️","🥄"]],["Je vole avec des ailes colorées, de fleur en fleur. Qui suis-je ?","🦋",["🦋","🐢","🐍"]],
+  ["Je suis rouge, je fais pin-pon et j'éteins le feu. Qui suis-je ?","🚒",["🚒","🚜","🚕"]],["Je marche de côté sur la plage et j'ai deux pinces. Qui suis-je ?","🦀",["🦀","🐌","🐝"]],
+  ["Je suis le roi des animaux, j'ai une crinière et je rugis très fort. Qui suis-je ?","🦁",["🦁","🐯","🐱"]],["Je tombe des arbres en automne, je suis jaune, rouge ou marron. Qui suis-je ?","🍂",["🍂","🌸","🍎"]],
+  ["On m'enroule autour du cou quand il fait froid. Qui suis-je ?","🧣",["🧣","👟","🎩"]],["J'ai deux roues et des pédales, on me fait avancer avec les pieds. Qui suis-je ?","🚲",["🚲","🚗","🛴"]],
+  ["Les abeilles me fabriquent, je suis doux et sucré. Qui suis-je ?","🍯",["🍯","🧀","🍞"]],["Je brille dans le ciel la nuit et je change de forme chaque soir. Qui suis-je ?","🌙",["🌙","☀️","🌈"]],
+  ["J'ai un très long cou et des taches, je mange les feuilles tout en haut des arbres. Qui suis-je ?","🦒",["🦒","🐘","🐴"]],["Je suis rond, on me tape avec le pied pour marquer un but. Qui suis-je ?","⚽",["⚽","🎈","🍊"]],
+  ["J'ai une trompe et de grandes oreilles, je suis très gros et tout gris. Qui suis-je ?","🐘",["🐘","🦏","🐭"]],["Je fais coin-coin et je nage dans la mare. Qui suis-je ?","🦆",["🦆","🐔","🐟"]],
+  ["On m'ouvre au-dessus de la tête quand il pleut. Qui suis-je ?","☂️",["☂️","🎩","🧤"]],["Je suis orange, les lapins m'adorent et je pousse dans la terre. Qui suis-je ?","🥕",["🥕","🍊","🌽"]],
+  ["Je donne du lait et je fais meuh. Qui suis-je ?","🐄",["🐄","🐑","🐖"]],["On m'allume sur le gâteau d'anniversaire et on souffle dessus. Qui suis-je ?","🕯️",["🕯️","🎈","🍬"]],
+  ["J'ai des touches noires et blanches et je fais de la musique. Qui suis-je ?","🎹",["🎹","🥁","🎺"]],["Je saute très haut et je porte mon bébé dans une poche. Qui suis-je ?","🦘",["🦘","🐸","🐇"]],
+  ["Je suis vert, je saute et je fais croâ. Qui suis-je ?","🐸",["🐸","🦎","🐢"]],["J'ai de grandes ailes et je transporte les gens dans le ciel. Qui suis-je ?","✈️",["✈️","🚂","🚀"]],
+  ["Je suis jaune et courbée, et les singes m'adorent. Qui suis-je ?","🍌",["🍌","🍋","🥒"]],["J'ai des piquants sur le dos et je me roule en boule. Qui suis-je ?","🦔",["🦔","🐿️","🐁"]],
+  ["J'aboie et je remue la queue quand je suis content. Qui suis-je ?","🐶",["🐶","🐱","🦊"]],["Je suis une grande fleur jaune qui tourne vers le soleil. Qui suis-je ?","🌻",["🌻","🌹","🌷"]],
+  ["On me met aux pieds pour courir. Qui suis-je ?","👟",["👟","🧦","🧢"]],["J'apparais dans le ciel après la pluie, avec plein de couleurs. Qui suis-je ?","🌈",["🌈","☁️","⭐"]],
+  ["J'ai une crête rouge et je chante cocorico le matin. Qui suis-je ?","🐓",["🐓","🦆","🦉"]],["On me gonfle avec de l'air et je m'envole si on me lâche. Qui suis-je ?","🎈",["🎈","⚽","🧸"]],
+  ["Je suis noir et blanc et je vis sur la banquise. Qui suis-je ?","🐧",["🐧","🦓","🐼"]],["J'ai des rayures noires et blanches et je ressemble à un cheval. Qui suis-je ?","🦓",["🦓","🐴","🐄"]],
+  ["Je fais du miel et je pique quand on m'embête. Qui suis-je ?","🐝",["🐝","🦋","🐞"]],["On me lit avant de dormir, j'ai plein de pages. Qui suis-je ?","📖",["📖","📺","🧸"]]];
+const RIME=[
+  ["Je n'ai ni bouche ni dent, pourtant je souffle tout le temps. Je fais danser les voiles au vent. Qui suis-je, mon enfant ?","🌬️",["🌬️","☀️","🐟"]],
+  ["Sur la plage je viens, je repars, je reviens, et j'efface tes châteaux de sable le matin. Qui suis-je ?","🌊",["🌊","🦀","🐚"]],
+  ["J'ai ma maison sur le dos, je suis tout lent et pas bien gros, et quand il pleut je sors aussitôt. Qui suis-je ?","🐌",["🐌","🐢","🐇"]],
+  ["Je suis rond comme un ballon, jaune comme un citron, et le soir je vais dormir derrière l'horizon. Qui suis-je ?","☀️",["☀️","🍋","⚽"]],
+  ["J'ai deux aiguilles mais je ne couds pas. Je dis l'heure à papa, à maman et à toi. Qui suis-je ?","🕰️",["🕰️","🧵","🌵"]],
+  ["J'ai huit pattes et je tisse ma toile, j'attends les mouches sous les étoiles. Qui suis-je ?","🕷️",["🕷️","🐝","🐞"]],
+  ["Je suis blanche et froide, je tombe du ciel en hiver, et avec moi on fait des bonhommes tout l'après-midi entier. Qui suis-je ?","❄️",["❄️","🌧️","☁️"]],
+  ["On me casse avant de me manger, je suis dans le gâteau et dans l'omelette du dîner. Qui suis-je ?","🥚",["🥚","🍎","🧀"]],
+  ["Je suis une maison qui flotte sur l'eau, j'ai des voiles et un drapeau. Qui suis-je ?","⛵",["⛵","🏠","🚗"]],
+  ["Dans l'eau je nage sans m'arrêter, j'ai des nageoires et des écailles dorées. Qui suis-je ?","🐠",["🐠","🐦","🐍"]],
+  ["Je suis blanc et tout doux, je flotte dans le ciel au-dessus de nous. Qui suis-je ?","☁️",["☁️","🐑","❄️"]],
+  ["Je suis rouge et tout rond, je pousse au jardin, on me croque en salade avec un bout de pain. Qui suis-je ?","🍅",["🍅","🍎","🍒"]],
+  ["Je porte une couronne et j'habite un château, je donne des ordres du haut de mon trône si beau. Qui suis-je ?","👑",["👑","🎩","🧢"]],
+  ["Je brille la nuit tout là-haut, petit point dans le ciel, je suis si beau. Qui suis-je ?","⭐",["⭐","🌙","☀️"]],
+  ["Je glisse sur la neige sans faire de bruit, avec deux longues planches je descends la piste aussi. Qui suis-je ?","⛷️",["⛷️","🏄","🚲"]],
+  ["Je suis petite et rouge avec des points noirs, je me pose sur ta main et je m'envole le soir. Qui suis-je ?","🐞",["🐞","🐝","🕷️"]]];
 const HARD=[["Qu'est-ce qui monte et ne redescend jamais ?","🎂",["🎂","🎈","🚀"]],
   ["Plus il est chaud, plus il est frais. Qui est-ce ?","🥖",["🥖","☕","🍦"]],
   ["Je suis plein de trous, pourtant je retiens l'eau. Qui suis-je ?","🧽",["🧽","🧀","🥅"]],
@@ -1141,14 +1191,23 @@ const HARD=[["Qu'est-ce qui monte et ne redescend jamais ?","🎂",["🎂","🎈
   ["Plus on m'enlève de terre, plus je deviens grand. Qui suis-je ?","🕳️",["🕳️","🏔️","🌳"]],
   ["J'ai des aiguilles mais je ne pique pas, et je tourne toute la journée. Qui suis-je ?","🕰️",["🕰️","🌵","🦔"]],
   ["Je réponds quand on m'appelle dans la montagne, mais je ne fais que répéter. Qui suis-je ?","🏔️",["🏔️","📞","🦜"]],
-  ["Je suis à toi, mais les autres m'utilisent plus souvent que toi. Qui suis-je ?","🏷️",["🏷️","👟","🎒"]]];
+  ["Je suis à toi, mais les autres m'utilisent plus souvent que toi. Qui suis-je ?","🏷️",["🏷️","👟","🎒"]],
+  ["Qu'est-ce qui est plein le jour et vide la nuit ?","👞",["👞","🛏️","🥛"]],
+  ["Je me casse dès qu'on prononce mon nom. Qui suis-je ?","🤫",["🤫","🥚","🏺"]],
+  ["J'ai des feuilles mais je ne suis pas un arbre. Qui suis-je ?","📖",["📖","🌴","🌵"]],
+  ["J'ai des touches mais je n'ouvre aucune porte. Qui suis-je ?","🎹",["🎹","🔐","🚪"]],
+  ["Je vole sans ailes et je pleure sans yeux. Qui suis-je ?","☁️",["☁️","🦇","🎈"]],
+  ["Je fais le tour de la maison sans jamais bouger. Qui suis-je ?","🧱",["🧱","🐕","🚗"]],
+  ["Qui marche à quatre pattes le matin, sur deux à midi et sur trois le soir ?","🧓",["🧓","🐕","🦒"]],
+  ["Je suis toujours devant toi, mais tu ne peux jamais me voir. Qui suis-je ?","🔮",["🔮","👓","🌫️"]],
+  ["Je remplis une pièce entière sans prendre de place. Qui suis-je ?","💡",["💡","🎈","📦"]]];
+function pickRiddles(pool,n){let seen=load("fortVues",[]);let fresh=pool.filter(r=>!seen.includes(r[0]));
+  if(fresh.length<n){seen=seen.filter(q=>!pool.some(r=>r[0]===q));fresh=pool.slice()}
+  const out=shuffle(fresh).slice(0,n);seen.push(...out.map(r=>r[0]));store("fortVues",seen);return out}
+
 function enigme(){
   const zone=openPanel("Les devinettes",`Bonjour ${cap()}, je suis Mamie Caret, la tortue gardienne. Écoute bien mes devinettes !`);
-  const riddles=shuffle([["Je suis jaune et je brille dans le ciel. Qui suis-je ?","🌞",["🌞","🌙","🌧️"]],["J'ai huit bras et je vis dans la mer. Qui suis-je ?","🐙",["🐙","🦀","🐬"]],
-    ["Je suis froide et je fonds quand il fait chaud. On me mange en cornet. Qui suis-je ?","🍦",["🍦","🍕","🥕"]],["Je dis miaou et j'aime faire la sieste. Qui suis-je ?","🐱",["🐶","🐱","🐮"]],
-    ["J'ouvre les portes et je suis toute petite. Qui suis-je ?","🔑",["🔑","✏️","🥄"]],["Je vole avec des ailes colorées, de fleur en fleur. Qui suis-je ?","🦋",["🦋","🐢","🐍"]],
-    ["Je suis rouge, je fais pin-pon et j'éteins le feu. Qui suis-je ?","🚒",["🚒","🚜","🚕"]],["Je marche de côté sur la plage et j'ai deux pinces. Qui suis-je ?","🦀",["🦀","🐌","🐝"]]]).slice(0,3);
-  if(LV()===2)riddles.splice(0,3,...shuffle(HARD.slice(0,5)).slice(0,3));
+  const riddles=pickRiddles(LV()===2?HARD:DEV,3);
   let round=0;zone.innerHTML=`<div class="keeper"><b>🐢</b><span>Mamie Caret</span></div><div class="q" style="width:100%;display:flex;justify-content:center"></div>`;const qz=zone.lastChild;
   function next(){setDots(round,3);const [q,ans,opts]=riddles[round];if(round===0)timers.push(setTimeout(()=>sayP(q),4200));else sayP(q);
     qz.innerHTML=`<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;const g=qz.firstChild;
@@ -1157,23 +1216,30 @@ function enigme(){
   next()}
 function vigie(){
   const zone=openPanel("L'énigme de la vigie",`Hou hou ! Bonjour ${cap()}. Je suis Maître Hulotte, le gardien de la vigie. Écoute bien mes énigmes en rimes !`);
-  const riddles=shuffle([
-    ["Je n'ai ni bouche ni dent, pourtant je souffle tout le temps. Je fais danser les voiles au vent. Qui suis-je, mon enfant ?","🌬️",["🌬️","☀️","🐟"]],
-    ["Sur la plage je viens, je repars, je reviens, et j'efface tes châteaux de sable le matin. Qui suis-je ?","🌊",["🌊","🦀","🐚"]],
-    ["J'ai ma maison sur le dos, je suis tout lent et pas bien gros, et quand il pleut je sors aussitôt. Qui suis-je ?","🐌",["🐌","🐢","🐇"]],
-    ["Je suis rond comme un ballon, jaune comme un citron, et le soir je vais dormir derrière l'horizon. Qui suis-je ?","☀️",["☀️","🍋","⚽"]],
-    ["J'ai deux aiguilles mais je ne couds pas. Je dis l'heure à papa, à maman et à toi. Qui suis-je ?","🕰️",["🕰️","🧵","🌵"]],
-    ["J'ai huit pattes et je tisse ma toile, j'attends les mouches sous les étoiles. Qui suis-je ?","🕷️",["🕷️","🐝","🐞"]],
-    ["Je suis blanche et froide, je tombe du ciel en hiver, et avec moi on fait des bonhommes tout l'après-midi entier. Qui suis-je ?","❄️",["❄️","🌧️","☁️"]],
-    ["On me casse avant de me manger, je suis dans le gâteau et dans l'omelette du dîner. Qui suis-je ?","🥚",["🥚","🍎","🧀"]],
-    ["Je suis une maison qui flotte sur l'eau, j'ai des voiles et un drapeau. Qui suis-je ?","⛵",["⛵","🏠","🚗"]]]).slice(0,3);
-  if(LV()===2)riddles.splice(0,3,...shuffle(HARD.slice(5)).slice(0,3));
+  const riddles=pickRiddles(LV()===2?HARD:RIME,3);
   let round=0;zone.innerHTML=`<div class="keeper"><b>🦉</b><span>Maître Hulotte</span></div><div class="q" style="width:100%;display:flex;justify-content:center"></div>`;const qz=zone.lastChild;
   function next(){setDots(round,3);const [q,ans,opts]=riddles[round];if(round===0)timers.push(setTimeout(()=>sayP(q),6500));else sayP(q);
     qz.innerHTML=`<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;const g=qz.firstChild;
     shuffle(opts).forEach(x=>{const b=document.createElement("button");b.className="pick";b.textContent=x;
       b.onclick=()=>{if(x===ans){b.classList.add("good");yay();round++;if(round===3)secure(),setTimeout(()=>win("vigie"),700);else timers.push(setTimeout(next,1000))}else wrong(b,"Hou hou, ce n'est pas ça ! Réécoute bien : "+q)};g.appendChild(b)})}
   next()}
+/* ================= RENDU PHOTO (textures et ciel réels, Poly Haven, CC0) ================= */
+const PH="https://dl.polyhaven.org/file/ph-assets/";
+const PHOTO={stone:{d:PH+"Textures/jpg/1k/seaworn_sandstone_brick/seaworn_sandstone_brick_diff_1k.jpg",n:PH+"Textures/jpg/1k/seaworn_sandstone_brick/seaworn_sandstone_brick_nor_gl_1k.jpg",k:2},
+  wood:{d:PH+"Textures/jpg/1k/brown_planks_03/brown_planks_03_diff_1k.jpg",n:PH+"Textures/jpg/1k/brown_planks_03/brown_planks_03_nor_gl_1k.jpg",k:1},
+  hdr:PH+"HDRIs/hdr/1k/kloofendal_48d_partly_cloudy_puresky_1k.hdr"};
+const REG={stoneC:[],stoneN:[],woodC:[]};let photoReady=false;
+function loadImg(u){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=u})}
+function swapImg(list,img,k){list.forEach(t=>{if(t.userData&&t.userData.photo)return;t.image=img;t.repeat.multiplyScalar(k);t.userData={photo:true};t.needsUpdate=true})}
+async function upgradePhoto(){
+  try{const [sd,sn,wd]=await Promise.all([loadImg(PHOTO.stone.d),loadImg(PHOTO.stone.n),loadImg(PHOTO.wood.d)]);
+    PHOTO.img={sd,sn,wd};swapImg(REG.stoneC,sd,PHOTO.stone.k);swapImg(REG.stoneN,sn,PHOTO.stone.k);swapImg(REG.woodC,wd,PHOTO.wood.k);photoReady=true}catch(e){}
+  try{if(!THREE.RGBELoader)return;const hdr=await new Promise((res,rej)=>new THREE.RGBELoader().setDataType(THREE.HalfFloatType).load(PHOTO.hdr,res,undefined,rej));
+    hdr.mapping=THREE.EquirectangularReflectionMapping;
+    const pm=new THREE.PMREMGenerator(renderer);const env=pm.fromEquirectangular(hdr).texture;pm.dispose();
+    envTex=env;scene.environment=env;scene.background=hdr;sky.visible=false;
+    const hz=new THREE.Color(.66,.74,.84);scene.fog.color.copy(hz);water.material.uniforms.horizon.value.set(hz.r,hz.g,hz.b)}catch(e){}}
+
 /* ================= LUMIÈRE CINÉMA ================= */
 let composer=null,renderPass=null,bloomPass=null,envTex=null;
 const FinalShader={uniforms:{tDiffuse:{value:null},exposure:{value:1.08},vig:{value:.28}},
@@ -1469,6 +1535,44 @@ function eau(){
   zone.querySelector(".pumpbtn").onclick=doPump;room.click=doPump;
   const kd=e=>{if(e.code==="Space"||e.code==="Enter"){e.preventDefault();doPump()}};addEventListener("keydown",kd);cleanups.push(()=>removeEventListener("keydown",kd))}
 
+/* ---------- Les cloches (mémoire de mélodie) ---------- */
+function cloches(){
+  const zone=openPanel("Les cloches","Écoute bien la mélodie des cloches, puis rejoue-la dans le même ordre !");
+  const cols=[["#d9412f","#ff9a85",523],["#2f7fd0","#8cc4ff",659],["#2fae5b","#8ee6a8",784],["#e0a300","#ffe07a",988]];
+  zone.innerHTML=`<div class="bells">${cols.map((c,i)=>`<button class="bell" data-i="${i}" style="--c:${c[0]};--h:${c[1]}" aria-label="Cloche ${i+1}">🔔</button>`).join("")}</div>`;
+  const bells=[...zone.querySelectorAll(".bell")],len=[4,5,7][LV()],rounds=3;let round=0,seq=[],pos=0,listening=false;
+  function ring(i){bells[i].classList.remove("on");void bells[i].offsetWidth;bells[i].classList.add("on");beep([cols[i][2],cols[i][2]*2.01],.2,"sine",.13);timers.push(setTimeout(()=>bells[i].classList.remove("on"),420))}
+  const wait=ms=>new Promise(r=>timers.push(setTimeout(r,ms)));
+  async function play(){listening=false;for(const i of seq){ring(i);await wait([700,620,520][LV()])}listening=true;pos=0;sayP("À toi ! Rejoue la mélodie.")}
+  function next(){setDots(round,rounds);seq=Array.from({length:len-2+round},()=>rnd(4));sayP("Écoute bien…");timers.push(setTimeout(play,1400))}
+  bells.forEach((b,i)=>b.onclick=()=>{if(!listening)return;ring(i);
+    if(i===seq[pos]){pos++;if(pos===seq.length){listening=false;round++;if(round===rounds)secure(),setTimeout(()=>win("cloches"),700);else{yay();timers.push(setTimeout(next,1100))}}}
+    else{listening=false;nope();sayP("Oups ! Je rejoue la mélodie…");timers.push(setTimeout(play,1400))}});
+  next()}
+/* ---------- Les ombres ---------- */
+function ombres(){
+  const zone=openPanel("Les ombres","Trouve l'ombre qui correspond à l'objet !");
+  const items=["🐘","🦒","🐇","🐢","🦀","🐙","🐌","🦋","🐓","🐟","🚲","✈️","⛵","🎸","☂️","🔑","🍐","🍄","🌵","🎩","⚓","🦕","🐿️","🦉","🐪","🦜","🚁","🏰"];
+  const rounds=[3,4,5][LV()],nOpts=[3,4,4][LV()];let round=0;
+  function next(){setDots(round,rounds);const pick=shuffle(items).slice(0,nOpts),target=pick[0];
+    zone.innerHTML=`<div class="target">${target}</div><div class="grid" style="grid-template-columns:repeat(${nOpts},1fr);max-width:${nOpts*130}px"></div>`;
+    const g=zone.lastChild;sayP("Quelle ombre est celle de cet objet ?");
+    shuffle(pick).forEach(x=>{const b=document.createElement("button");b.className="pick shadow";b.innerHTML=`<span>${x}</span>`;b.setAttribute("aria-label","Ombre");
+      b.onclick=()=>{if(x===target){b.classList.remove("shadow");b.classList.add("good");yay();round++;if(round===rounds)secure(),setTimeout(()=>win("ombres"),800);else timers.push(setTimeout(next,1000))}
+        else wrong(b,"Ce n'est pas la bonne ombre. Regarde bien la forme !")};g.appendChild(b)})}
+  next()}
+/* ---------- Les crabes ---------- */
+function crabes(){
+  const zone=openPanel("Les crabes","Attrape les crabes quand ils sortent du sable !");
+  zone.innerHTML=`<div class="holes">${Array.from({length:9},(_,i)=>`<button class="hole" aria-label="Trou ${i+1}"><span class="cr">🦀</span></button>`).join("")}</div>`;
+  const holes=[...zone.querySelectorAll(".hole")],goal=[8,10,14][LV()],stay=[1400,1100,800][LV()];let caught=0;setDots(0,goal);
+  function pop(){const free=holes.filter(h=>!h.classList.contains("up"));if(!free.length)return;const h=free[rnd(free.length)];h.classList.add("up");
+    h.dataset.t=setTimeout(()=>h.classList.remove("up"),stay)}
+  holes.forEach(h=>h.onclick=()=>{if(!h.classList.contains("up"))return;clearTimeout(+h.dataset.t);h.classList.remove("up");h.classList.add("got");
+    timers.push(setTimeout(()=>h.classList.remove("got"),300));beep([700,1000],.07);caught++;setDots(caught,goal);
+    if(caught>=goal)secure(),setTimeout(()=>win("crabes"),600)});
+  timers.push(setInterval(pop,[950,780,600][LV()]));pop()}
+
 function tresor(){
   if(busy)return;
   if(done.length<CHALLENGES.length){const left=CHALLENGES.length-done.length;creak();nope();say(`La grille est fermée ! Il te manque encore ${left} clé${left>1?"s":""}.`);return}
@@ -1489,7 +1593,7 @@ function runTreasure(){
     if(time<=0){timers.forEach(t=>{clearInterval(t);clearTimeout(t)});timers=[];confetti("🪙💎⭐👑");fanfare();victory();musicLevel(.18,"theme");clock2.textContent="";
       sayP(`Vous avez ramassé ${n} pièces d'or ! Vous êtes les rois du fort !`,`Temps écoulé ! Bravo ${teamNames()} !`);
       vault.outerHTML=`<div style="font-size:110px;animation:bob 1.4s infinite;filter:drop-shadow(0 0 20px #ffc62b)">👑</div><button class="big" id="again">Rejouer</button>`;
-      $("again").onclick=()=>{done=[];store("fortDefis",done);gateWant=0;closePanel().then(()=>say("C'est reparti ! Choisis une porte."))}}},1000))}
+      session.finished=true;store("fortSession",session);$("again").textContent="🔄 Nouvelle partie";$("again").onclick=startNewSession}},1000))}
 
 updatePlate();
 (document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,2500))]):Promise.resolve()).then(()=>setTimeout(()=>{try{init()}catch(err){showError(err.message);console.error(err)}},30));
