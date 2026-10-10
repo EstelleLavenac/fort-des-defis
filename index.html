@@ -118,6 +118,8 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
 .hourglass .sand i{position:absolute;left:0;top:0;bottom:0;width:100%;background:linear-gradient(90deg,#e8b54a,#d68f1a);display:block;transition:width .9s linear}
 .hourglass b{font-family:var(--display);color:var(--wood);min-width:56px}
 .maze{width:min(540px,100%);height:auto;border-radius:12px;border:6px solid #3a2a18;box-shadow:0 8px 20px rgba(0,0,0,.3);cursor:pointer;touch-action:manipulation}
+.lrbtns{display:flex;gap:18px;justify-content:center;margin-top:10px}.lrbtns .big{font-size:34px;padding:12px 28px;touch-action:none;user-select:none}
+.balance .needle.ball{width:22px;margin-left:-11px;border-radius:50%;top:4px;bottom:4px;background:#fff;box-shadow:0 0 0 3px #2c1406}.balance .needle.bad{background:#e04b3a}
 .pad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,58px);gap:6px}
 .pad button{border:0;border-radius:14px;background:#fffaf0;box-shadow:0 4px 0 #a88962;font-size:30px}
 .pad [data-d=up]{grid-column:2;grid-row:1}.pad [data-d=left]{grid-column:1;grid-row:2}.pad [data-d=down]{grid-column:2;grid-row:2}.pad [data-d=right]{grid-column:3;grid-row:2}
@@ -289,7 +291,8 @@ const rnd=n=>Math.floor(Math.random()*n);
 const shuffle=a=>{a=Array.isArray(a)?[...a]:a&&typeof a!=="string"&&a[Symbol.iterator]?[...a]:[];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
 const TYPES={memo:{icon:"🃏",name:"Les cartes"},compte:{icon:"🐚",name:"Les coquillages"},intrus:{icon:"🔍",name:"L'intrus"},enigme:{icon:"🐢",name:"Les devinettes"},
   labyrinthe:{icon:"🧭",name:"Le labyrinthe"},jarres:{icon:"🏺",name:"Les jarres"},pont:{icon:"🌉",name:"Le pont de corde"},eau:{icon:"💧",name:"La cellule d'eau"},
-  peche:{icon:"🎣",name:"La pêche"},cloches:{icon:"🔔",name:"Les cloches"},ombres:{icon:"🔦",name:"Les ombres"},crabes:{icon:"🦀",name:"Les crabes"}};
+  peche:{icon:"🎣",name:"La pêche"},cloches:{icon:"🔔",name:"Les cloches"},ombres:{icon:"🔦",name:"Les ombres"},crabes:{icon:"🦀",name:"Les crabes"},
+  rondin:{icon:"🪵",name:"Le rondin"},escalade:{icon:"🧗",name:"Le mur d'escalade"}};
 const SLOTS=[9,29,47.42,66.27,80.2,87.2,102.2,109.2,132.55];
 function newSession(){return{types:shuffle(Object.keys(TYPES)).slice(0,SLOTS.length),started:Date.now()}}
 let session=load("fortSession",null);
@@ -912,7 +915,7 @@ function tween(ms,fn,ease){ease=ease||(k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2);r
 function flyTo(pos,look,ms){const p0=camera.position.clone(),l0=curLook.clone();
   return tween(ms,k=>{camera.position.lerpVectors(p0,pos,k);curLook.lerpVectors(l0,look,k);camera.lookAt(curLook)})}
 const TITLES={memo:"Épreuve des cartes !",compte:"Épreuve des coquillages !",peche:"Épreuve de la pêche !",intrus:"Épreuve de l'intrus !",enigme:"Épreuve des devinettes !",vigie:"L'énigme de la vigie !",
-  labyrinthe:"Épreuve du labyrinthe !",cloches:"Épreuve des cloches !",ombres:"Épreuve des ombres !",crabes:"Épreuve des crabes !",eau:"La cellule d'eau !",jarres:"Épreuve des jarres !",pont:"Le pont de corde !"};
+  labyrinthe:"Épreuve du labyrinthe !",cloches:"Épreuve des cloches !",ombres:"Épreuve des ombres !",crabes:"Épreuve des crabes !",eau:"La cellule d'eau !",jarres:"Épreuve des jarres !",pont:"Le pont de corde !",rondin:"Épreuve du rondin !",escalade:"Le mur d'escalade !"};
 let busy=false,saved=null;
 async function enterDoor(id,after){
   if(busy)return;busy=true;P.target=null;hideMarker();for(const k in keys)keys[k]=false;
@@ -1037,7 +1040,7 @@ function openPanel(title,sayText,cave){
   panel.querySelector(".close").onclick=closePanel;overlay.hidden=false;musicLevel(.18);say(sayText,panel.querySelector(".say"),null,true);return panel.querySelector(".zone")}
 function stopAll(){timers.forEach(t=>{clearInterval(t);clearTimeout(t)});timers=[];cleanups.forEach(f=>{try{f()}catch(e){}});cleanups=[];document.querySelectorAll('.sablier').forEach(e=>e.remove());sab=null}
 /* ================= LE SABLIER ================= */
-const TIMES={cloches:95,ombres:60,crabes:50,memo:100,compte:70,peche:50,intrus:70,enigme:100,vigie:110,labyrinthe:80,jarres:110,pont:80,eau:40};
+const TIMES={cloches:95,ombres:60,crabes:50,memo:100,compte:70,peche:50,intrus:70,enigme:100,vigie:110,labyrinthe:80,jarres:110,pont:80,eau:40,rondin:75,escalade:70};
 let sab=null;
 function slam(){const c=actx;if(!c||!noiseBuf)return;const t=c.currentTime;
   const n=c.createBufferSource();n.buffer=noiseBuf;const f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=380;n.connect(f);f.connect(g);g.connect(c.destination);
@@ -1117,7 +1120,7 @@ function win(id){
   sayP(first?(left?`Bravo ! Plus que ${left} clé${left>1?"s":""} !`:`C'est la dernière clé ! Le trésor t'attend !`):"Bravo, encore réussi !",first?`Une clé pour ${cap()} !`:null);
   zone.querySelector(".big").onclick=closePanel}
 function wrong(b,msg){b.classList.remove("bad");void b.offsetWidth;b.classList.add("bad");nope();sayP(msg)}
-function openChallenge(id){({memo,compte,peche,intrus,enigme,vigie,labyrinthe,eau,jarres,pont,cloches,ombres,crabes})[id]();startSablier(id)}
+function openChallenge(id){({memo,compte,peche,intrus,enigme,vigie,labyrinthe,eau,jarres,pont,cloches,ombres,crabes,rondin,escalade})[id]();startSablier(id)}
 function memo(){
   const zone=openPanel("Les cartes","Retourne les cartes et trouve les paires pareilles !");
   const THEMES=[["🦀","🐙","🐠","⚓","🐬","🦈","🐳","🏝️"],["🦁","🐘","🦒","🐒","🦓","🐼","🐨","🦊"],["🍓","🍌","🍇","🍉","🍍","🍒","🍑","🥝"],["🚂","🚁","⛵","🚀","🚗","🚲","🚒","🛸"],["🎸","🥁","🎺","🎻","🎹","🪕","🎷","📯"]];
@@ -1395,7 +1398,119 @@ function jarres(){
       await anim(500,k=>{j.g.position.y=1.07+k*1.5});await sleep(900);await anim(400,k=>{j.g.position.y=2.57-k*1.5});crab.visible=false;j.open=false}};
   play()}
 
-/* ---------- Le pont de corde (salle 3D, vue à la première personne) ---------- */
+/* ---------- Le pont de corde (salle 3D, vue à la première personne) ---------- *//* ---------- Le rondin qui tourne (salle 3D, première personne) ---------- */
+function rondin(){
+  const L=[8,10,12][LV()],K=[.3,.42,.6][LV()],INST=[.2,.35,.55][LV()],ADV=[.11,.1,.095][LV()],R=.55,Z0=L/2;
+  let logG,water;
+  const zone=openRoom("Le rondin","Le rondin tourne ! Garde l'équilibre avec les flèches ⬅️ ➡️ : tu avances tout seul quand tu es bien droit.",()=>{
+    const r=newRoom({fov:64,hemi:.32,fogNear:10,fogFar:40});const S=r.scene;
+    const cav=new THREE.Mesh(new THREE.BoxGeometry(14,16,L+14),stoneMat(4,5,"#8f816c"));cav.material=cav.material.clone();cav.material.side=THREE.BackSide;cav.position.y=3;S.add(cav);
+    const wn=tex(waterNormalCanvas(),3,3,false);water=new THREE.Mesh(new THREE.PlaneGeometry(14,L+14),new THREE.MeshStandardMaterial({color:C("#0d4256"),roughness:.12,metalness:.35,normalMap:wn}));
+    water.rotation.x=-Math.PI/2;water.position.y=-2.4;S.add(water);r.wn=wn;
+    const wl=new THREE.PointLight(0x2aa0c0,1.3,12,2);wl.position.set(0,-1.5,0);S.add(wl);
+    const st=stoneMat(1.5,1.5,"#a8997f");
+    [Z0+2.2,-Z0-2.2].forEach(z=>box(5,6,4.4,st,0,R-3,z,S));
+    logG=new THREE.Group();S.add(logG);
+    const bark=new THREE.MeshStandardMaterial({map:tex(WOOD,3,1),color:C("#8a6440"),roughness:.9});
+    const lg=new THREE.Mesh(new THREE.CylinderGeometry(R,R,L,40,1),bark);lg.rotation.x=Math.PI/2;lg.castShadow=lg.receiveShadow=true;logG.add(lg);
+    for(let i=0;i<14;i++){const k=new THREE.Mesh(new THREE.SphereGeometry(.09+Math.random()*.06,8,6),bark);const a=Math.random()*6.28,z=(Math.random()-.5)*L*.95;k.position.set(Math.cos(a)*R,Math.sin(a)*R,z);logG.add(k)}
+    const iron=new THREE.MeshStandardMaterial({color:0x34343a,metalness:.7,roughness:.4});
+    [Z0,-Z0].forEach(z=>{const ring=new THREE.Mesh(new THREE.TorusGeometry(R+.03,.06,8,30),iron);ring.position.z=z*.98;logG.add(ring);
+      const ax=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,1.2,12),iron);ax.rotation.x=Math.PI/2;ax.position.z=z+(z>0?.4:-.4);S.add(ax)});
+    const ped=new THREE.Mesh(new THREE.CylinderGeometry(.45,.55,1.1,20),stoneMat(.4,.4,"#cbb894"));ped.position.set(0,R+.55,-Z0-2.6);S.add(ped);
+    const k=keyMesh();k.scale.setScalar(.8);k.position.set(0,R+1.75,-Z0-2.6);S.add(k);r.key=k;
+    const kl=new THREE.PointLight(0xffc040,2,7,2);kl.position.set(0,R+2.3,-Z0-2.3);S.add(kl);
+    roomTorch(r,-6.95,2.2,Z0+1.5,1,0);roomTorch(r,6.95,2.2,Z0+1.5,-1,0);roomTorch(r,-6.95,2.2,-Z0-1.5,1,0);roomTorch(r,6.95,2.2,-Z0-1.5,-1,0);
+    r.camera.position.set(0,R+1.45,Z0+.4);r.camera.lookAt(0,R+1,-Z0);return r});
+  zone.innerHTML=`<div class="balance"><div class="green" style="left:${50-.55*46}%;width:${.55*92}%"></div><div class="needle ball"></div></div>
+    <div class="lrbtns"><button class="big" data-d="-1" aria-label="Pencher à gauche">⬅️</button><button class="big" data-d="1" aria-label="Pencher à droite">➡️</button></div>`;
+  const needle=zone.querySelector(".needle");
+  let b=0,p=0,spin=Math.random()<.5?-1:1,nextSwap=2.5,hold=0,falling=0,fin=false,t0=0;
+  const setHold=v=>{hold=v};
+  zone.querySelectorAll(".lrbtns button").forEach(bt=>{const d=+bt.dataset.d;
+    bt.addEventListener("pointerdown",e=>{e.preventDefault();setHold(d)});["pointerup","pointerleave","pointercancel"].forEach(ev=>bt.addEventListener(ev,()=>{if(hold===d)setHold(0)}))});
+  const kd=e=>{if(e.code==="ArrowLeft"||e.code==="KeyA"||e.code==="KeyQ"){e.preventDefault();setHold(-1)}if(e.code==="ArrowRight"||e.code==="KeyD"){e.preventDefault();setHold(1)}};
+  const ku=e=>{if((e.code==="ArrowLeft"||e.code==="KeyA"||e.code==="KeyQ")&&hold<0)setHold(0);if((e.code==="ArrowRight"||e.code==="KeyD")&&hold>0)setHold(0)};
+  addEventListener("keydown",kd);addEventListener("keyup",ku);cleanups.push(()=>{removeEventListener("keydown",kd);removeEventListener("keyup",ku)});
+  function splash(){const c=actx;if(!c||!noiseBuf)return;const n=c.createBufferSource();n.buffer=noiseBuf;const f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=900;
+    n.connect(f);f.connect(g);g.connect(c.destination);const t=c.currentTime;g.gain.setValueAtTime(.45,t);g.gain.exponentialRampToValueAtTime(.001,t+1.1);n.start(t);n.stop(t+1.2)}
+  room.update=(dt,t)=>{flicker(room,t);room.wn.offset.set(t*.03,t*.02);room.key.rotation.y+=dt*1.6;
+    const c=room.camera;
+    logG.rotation.z+=spin*[1.2,1.6,2.1][LV()]*dt;
+    if(falling){falling+=dt;const k=Math.min(1,falling/1.1);c.position.y=R+1.45-k*3.6;c.rotation.z=b*.6+k*1.2;
+      if(falling>1.8){falling=0;b=0;p=0;spin=Math.random()<.5?-1:1;sayP("On remonte au début ! Penche-toi du côté opposé au rondin.")}return}
+    if(fin)return;
+    nextSwap-=dt;if(nextSwap<=0){spin=-spin;nextSwap=1.8+Math.random()*2.2}
+    b+=(spin*K+b*INST+hold*1.25+(Math.random()-.5)*.25)*dt;
+    if(Math.abs(b)>=1){falling=.001;nope();splash();sayP("Plouf ! Tu es tombé dans l'eau…");return}
+    if(Math.abs(b)<.55){p=Math.min(1,p+ADV*dt*(1-Math.abs(b)*.6));if(p>=1){fin=true;secure();yay();setTimeout(()=>win("rondin"),900)}}
+    const z=Z0+.4-p*(L+.8);
+    c.position.set(b*.3,R+1.45+Math.abs(Math.sin(t*5))*.04,z);c.lookAt(b*.15,R+.9,z-6);c.rotateZ(-b*.45);
+    needle.style.left=(50+b*46)+"%";needle.classList.toggle("bad",Math.abs(b)>.55)};
+}
+
+/* ---------- Le mur d'escalade (dehors, sur la façade au-dessus de la mer) ---------- */
+function escalade(){
+  const N=[6,8,10][LV()],FR=[1,1,2][LV()],DY=1.15,COLS=["#f2b400","#2fae5b","#2f7fd0","#e04b3a","#ff7a1a"];
+  let holds=[],climber,rope,cur=0,camY=1,busyClimb=false;
+  const zone=openRoom("Le mur d'escalade","Grimpe jusqu'à la clé ! Clique sur une prise juste au-dessus de toi. Attention : les prises grises s'effritent, prends celles de couleur !",()=>{
+    const r=newRoom({fov:55,hemi:.75,fogNear:40,fogFar:140});const S=r.scene;
+    S.background=(scene.background&&scene.background.isTexture)?scene.background:new THREE.Color(.55,.72,.88);S.fog.color.set(.66,.74,.84);
+    const sun=new THREE.DirectionalLight(0xfff0d6,1.5);sun.position.set(-8,20,14);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
+    Object.assign(sun.shadow.camera,{left:-10,right:10,top:16,bottom:-6});sun.shadow.camera.updateProjectionMatrix();S.add(sun);
+    const H=N*DY+4;
+    const wall=new THREE.Mesh(new THREE.PlaneGeometry(16,H+4),stoneMat(16/3.5,(H+4)/3.5,"#d2bf98"));wall.position.set(0,H/2-2,0);wall.receiveShadow=true;S.add(wall);
+    const algae=new THREE.Mesh(new THREE.PlaneGeometry(16,2.2),new THREE.MeshStandardMaterial({color:C("#3e4a33"),roughness:1,transparent:true,opacity:.75}));algae.position.set(0,-2.6,.02);S.add(algae);
+    const wn=tex(waterNormalCanvas(),8,8,false);const sea=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:C("#1d6a96"),roughness:.1,metalness:.3,normalMap:wn}));
+    sea.rotation.x=-Math.PI/2;sea.position.y=-3.2;S.add(sea);r.wn=wn;
+    const ledge=box(4,.4,1.2,stoneMat(1,.3,"#b9a888"),0,-.2,.6,S);
+    const top=box(16,.6,1.4,stoneMat(4,.3,"#a85a3c"),0,N*DY+1.3,.6,S);
+    const k=keyMesh();k.position.set(0,N*DY+2.4,.7);S.add(k);r.key=k;
+    const kl=new THREE.PointLight(0xffc040,1.8,6,2);kl.position.set(0,N*DY+2.6,1.4);S.add(kl);
+    // fenêtres de casemates pour situer la façade
+    const dark=new THREE.MeshStandardMaterial({color:C("#2b140d"),roughness:1});
+    for(let y=1;y<N*DY;y+=3.4)[-5.5,5.5].forEach(x=>{const w=new THREE.Mesh(new THREE.ShapeGeometry(archShape(1.3,1.9),10),dark);w.position.set(x,y,.02);S.add(w)});
+    setBase(r,new THREE.Vector3(2.6,2.4,8.6),new THREE.Vector3(0,1.6,0),1.5);return r});
+  zone.innerHTML=`<div class="lrbtns"><button class="big" data-i="0" aria-label="Prise de gauche">↖️</button><button class="big" data-i="1" aria-label="Prise du milieu">⬆️</button><button class="big" data-i="2" aria-label="Prise de droite">↗️</button></div>`;
+  const S=room.scene;
+  for(let i=1;i<=N;i++){const row=[],bad=new Set();while(bad.size<FR)bad.add(rnd(3));
+    for(let j=0;j<3;j++){const fragile=bad.has(j),g=new THREE.Group();
+      const m=fragile?new THREE.Mesh(new THREE.DodecahedronGeometry(.24,0),new THREE.MeshStandardMaterial({color:C("#8e8a82"),roughness:1,flatShading:true}))
+        :new THREE.Mesh(new THREE.SphereGeometry(.24,16,12),new THREE.MeshStandardMaterial({color:C(COLS[rnd(COLS.length)]),roughness:.55}));
+      m.scale.set(1.3,.85,.8);m.castShadow=true;g.add(m);
+      if(fragile)for(let q=0;q<3;q++){const cr=new THREE.Mesh(new THREE.BoxGeometry(.02,.22,.02),new THREE.MeshBasicMaterial({color:0x2a2620}));cr.position.set((q-1)*.1,0,.2);cr.rotation.z=(q-1)*.5;g.add(cr)}
+      g.position.set((j-1)*1.35+(Math.random()-.5)*.35,i*DY+(Math.random()-.5)*.2,.18);S.add(g);g.traverse(o=>o.userData.hold={row:i,col:j,fragile,g});row.push({g,fragile})}
+    holds.push(row)}
+  climber=explorer();climber.scale.setScalar(1.25);climber.rotation.y=Math.PI;climber.position.set(0,0,.5);S.add(climber);
+  rope=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,1,6),new THREE.MeshStandardMaterial({color:C("#e8d9a8"),roughness:1}));S.add(rope);
+  const crumble=()=>{const c=actx;if(!c||!noiseBuf)return;const n=c.createBufferSource();n.buffer=noiseBuf;const f=c.createBiquadFilter(),g=c.createGain();f.type="bandpass";f.frequency.value=600;
+    n.connect(f);f.connect(g);g.connect(c.destination);const t=c.currentTime;g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);n.start(t);n.stop(t+.55)};
+  const anims=[];const anim=(ms,fn)=>new Promise(res=>anims.push({t0:performance.now(),ms,fn,res}));
+  async function grab(h){if(busyClimb||!h)return;
+    if(h.row!==cur+1){sayP("Prends une prise juste au-dessus de toi !");return}
+    busyClimb=true;const from=climber.position.clone(),to=new THREE.Vector3(h.g.position.x,h.g.position.y-1.25,.5);
+    if(h.fragile){crumble();nope();await anim(380,k=>{climber.position.lerpVectors(from,to,k*.45)});
+      const g=h.g;anim(900,k=>{g.position.y-=.12*k;g.rotation.z+=.1;g.traverse(o=>{if(o.material){o.material.transparent=true;o.material.opacity=1-k}})}).then(()=>S.remove(g));
+      holds[h.row-1][h.col].broken=true;
+      const back=Math.max(0,cur-1);
+      const target=back===0?new THREE.Vector3(0,0,.5):new THREE.Vector3(climber.position.x,back*DY-1.25,.5);
+      const p0=climber.position.clone();await anim(500,k=>{climber.position.lerpVectors(p0,target,k)});cur=back;
+      sayP("Aïe, cette prise s'est effritée ! Prends une prise de couleur.");busyClimb=false;return}
+    tick();await anim(520,k=>{climber.position.lerpVectors(from,to,k);climber.position.z=.5+Math.sin(k*Math.PI)*.15});cur++;busyClimb=false;
+    if(cur===N){secure();busyClimb=true;const p0=climber.position.clone();await anim(800,k=>{climber.position.set(p0.x*(1-k),p0.y+k*(N*DY+1.6-p0.y),.5+k*.4)});yay();setTimeout(()=>win("escalade"),700)}
+    else if(cur===Math.floor(N/2))sayP("Tu es à mi-hauteur ! Ne regarde pas en bas…")}
+  room.click=e=>{const h=roomRay(e).intersectObjects(holds.flat().filter(x=>!x.broken).map(x=>x.g),true);if(h.length)grab(h[0].object.userData.hold)};
+  room.hover=e=>{const h=roomRay(e).intersectObjects(holds.flat().filter(x=>!x.broken).map(x=>x.g),true);renderer.domElement.style.cursor=h.length&&h[0].object.userData.hold.row===cur+1?"pointer":"default"};
+  const pick=i=>{const r=holds[cur];if(!r)return;const x=r[i];if(x&&!x.broken)grab(x.g.children[0].userData.hold)};
+  zone.querySelectorAll(".lrbtns button").forEach(b=>b.onclick=()=>pick(+b.dataset.i));
+  const kd=e=>{const m={ArrowLeft:0,ArrowUp:1,ArrowRight:2}[e.code];if(m!==undefined){e.preventDefault();pick(m)}};addEventListener("keydown",kd);cleanups.push(()=>removeEventListener("keydown",kd));
+  room.update=(dt,t)=>{const now=performance.now();for(let i=anims.length-1;i>=0;i--){const a=anims[i],k=Math.min(1,(now-a.t0)/a.ms);a.fn(k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2);if(k>=1){anims.splice(i,1);a.res()}}
+    room.wn.offset.set(t*.02,t*.015);room.key.rotation.y+=dt*1.6;
+    const next=holds[cur];holds.forEach((row,ri)=>row.forEach(x=>{if(!x.broken)x.g.scale.setScalar(ri===cur?1+Math.sin(t*5)*.12:1)}));
+    const topY=N*DY+1.6,cy=climber.position.y+1.6;rope.scale.y=Math.max(.1,topY-cy);rope.position.set(climber.position.x*.5,(topY+cy)/2,.55);rope.rotation.z=Math.atan2(climber.position.x*.5,topY-cy)*.5;
+    camY+=(climber.position.y-camY)*Math.min(1,dt*3);const c=room.camera,b=room.base,k2=Math.min(2.4,Math.max(1,1.5/c.aspect));
+    c.position.set(2.6*k2*.6,camY+2.4,8.6*k2);c.lookAt(0,camY+1.6,0)}}
+
 function pont(){
   const N=[6,8,10][LV()],Z0=8.2,Z1=-8.2,SAG=1.1,ZONE=[.45,.38,.3][LV()];
   const yAt=z=>-Math.sin((Z0-z)/(Z0-Z1)*Math.PI)*SAG;
