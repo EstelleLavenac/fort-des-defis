@@ -1214,8 +1214,8 @@ function lose(id){
   const [q,ans,opts]=pickRiddles(LV()===2?HARD:DEV.concat(RIME),1)[0];
   const zone=panel.querySelector(".zone");panel.querySelector(".dots").innerHTML="";
   zone.innerHTML=`<div class="lost"><span>⛓️</span><p>Le sablier est vide…<br><b>Tu es prisonnier !</b></p></div>
-    <div class="keeper"><b>🦉</b><span>Maître Hulotte</span></div><div class="grid prisonq" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;
-  sayP("Pour sortir de prison, réponds à l'énigme de Maître Hulotte. "+q,`Le temps est écoulé ! ${cap()} est prisonnier !`);
+    <div class="keeper"><b>🦉</b><span>Père Trouillard</span></div><div class="grid prisonq" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;
+  sayP("Pour sortir de prison, réponds à l'énigme de Père Trouillard. "+q,`Le temps est écoulé ! ${cap()} est prisonnier !`);
   const g=zone.querySelector(".prisonq");let freed=false;
   shuffle(opts).forEach(x=>{const b=document.createElement("button");b.className="pick";b.textContent=x;
     b.onclick=()=>{if(freed)return;
@@ -1350,9 +1350,9 @@ function pickRiddles(pool,n){let seen=load("fortVues",[]);let fresh=pool.filter(
   const out=shuffle(fresh).slice(0,n);seen.push(...out.map(r=>r[0]));store("fortVues",seen);return out}
 
 function vigie(){
-  const zone=openPanel("L'énigme de la vigie",`Hou hou ! Bonjour ${cap()}. Je suis Maître Hulotte, le gardien de la vigie. Écoute bien mes énigmes en rimes !`);
+  const zone=openPanel("L'énigme de la vigie",`Hou hou ! Bonjour ${cap()}. Je suis Père Trouillard, le gardien de la vigie. Écoute bien mes énigmes en rimes !`);
   const riddles=pickRiddles(LV()===2?HARD:RIME,3);
-  let round=0;zone.innerHTML=`<div class="keeper"><b>🦉</b><span>Maître Hulotte</span></div><div class="q" style="width:100%;display:flex;justify-content:center"></div>`;const qz=zone.lastChild;
+  let round=0;zone.innerHTML=`<div class="keeper"><b>🦉</b><span>Père Trouillard</span></div><div class="q" style="width:100%;display:flex;justify-content:center"></div>`;const qz=zone.lastChild;
   function next(){setDots(round,3);const [q,ans,opts]=riddles[round]||riddles[0];if(round===0)timers.push(setTimeout(()=>sayP(q),6500));else sayP(q);
     qz.innerHTML=`<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;const g=qz.firstChild;
     shuffle(opts).forEach(x=>{const b=document.createElement("button");b.className="pick";b.textContent=x;

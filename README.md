@@ -17,7 +17,7 @@ On arrive en bateau devant un fort posé sur la mer, puis on marche soi-même su
 - **La pêche** : attraper 8 poissons.
 - **L'intrus** : trouver celui qui n'est pas de la même famille.
 - **Les devinettes** : écouter les devinettes de Papi Goémon, le vieux gardien à la barbe blanche.
-- **L'énigme de la vigie** : dans la tour de guet, résoudre les énigmes en rimes de Maître Hulotte, le vieux hibou.
+- **L'énigme de la vigie** : dans la tour de guet, résoudre les énigmes en rimes de Père Trouillard, le vieux hibou.
 - **Le labyrinthe** : rejoindre la clé avant que le sablier soit vide.
 - **Les jarres** : suivre des yeux la jarre qui cache la clé.
 - **Le pont de corde** : traverser en gardant l'équilibre.
@@ -32,7 +32,7 @@ Deux petits mousses, Pip et Pop, accompagnent l'équipe partout dans le fort. Un
 ## En équipe et contre la montre
 
 - Au départ, on indique les prénoms et l'âge des joueurs. Ils jouent chacun leur tour, et la difficulté s'adapte à l'âge de celui qui joue (durée du sablier, nombre de cartes, taille du labyrinthe, énigmes plus difficiles pour les grands…).
-- Chaque épreuve a un sablier. S'il se vide avant la fin, le joueur est fait prisonnier : il doit résoudre une énigme de Maître Hulotte pour être libéré. La porte se referme sans clé, mais on peut retenter l'épreuve plus tard.
+- Chaque épreuve a un sablier. S'il se vide avant la fin, le joueur est fait prisonnier : il doit résoudre une énigme de Père Trouillard pour être libéré. La porte se referme sans clé, mais on peut retenter l'épreuve plus tard.
 
 ## Jouer
 
