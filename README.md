@@ -2,7 +2,7 @@
 
 Un jeu d'aventure en 3D à jouer en équipe (de 1 à 4 enfants, de 4 à 13 ans), directement dans le navigateur.
 
-On arrive en bateau devant un fort posé sur la mer, puis on marche soi-même sur la passerelle jusque dans la cour intérieure. La cour a deux étages : un escalier monte à la galerie. Au rez-de-chaussée comme à l'étage, chaque porte cache une épreuve, et chaque épreuve réussie donne une clé. Avec les dix clés, la grille du trésor se lève.
+On arrive en bateau devant un fort posé sur la mer, puis on marche soi-même sur la passerelle jusque dans la cour intérieure. La cour a deux étages : un escalier monte à la galerie. Au rez-de-chaussée comme à l'étage, chaque porte cache une épreuve, et chaque épreuve réussie donne une clé. L'équipe choisit 7 épreuves parmi les 10 portes : avec 7 clés, la grille du trésor se lève.
 
 ## Les épreuves
 
@@ -47,6 +47,6 @@ La progression (les clés gagnées et le prénom du capitaine) est gardée dans 
 
 ## Technique
 
-Un seul fichier HTML, sans installation. La 3D utilise [three.js](https://threejs.org) r128. Les textures de pierre et de bois et le ciel sont des photos libres de droits (CC0) de [Poly Haven](https://polyhaven.com), chargées au lancement ; si elles ne sont pas disponibles, le jeu utilise des textures dessinées par le code. Les sons, la musique et la mer sont générés par le code.
+Un seul fichier HTML, sans installation. La 3D utilise [three.js](https://threejs.org) r128. Les textures de pierre et de bois et le ciel sont des photos libres de droits (CC0) de [Poly Haven](https://polyhaven.com), chargées au lancement ; si elles ne sont pas disponibles, le jeu utilise des textures dessinées par le code. Les sons, la musique et la mer sont générés par le code. Si un fichier `assets/audio/generique.mp3` est présent à côté de `index.html`, il est joué au départ (volume 30 %, bouton 🔊 pour le couper) à la place de la musique générée.
 
 Jeu original créé par Estelle Lavenac.
