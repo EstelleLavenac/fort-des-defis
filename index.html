@@ -240,6 +240,7 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
     <div class="keys" id="keys" aria-label="Clés gagnées"></div>
     <button class="iconbtn" id="repeat" aria-label="Réécouter le perroquet">💬</button>
     <button class="iconbtn" id="musBtn" aria-label="Couper la musique">🎵</button>
+    <button class="iconbtn" id="genBtn" aria-label="Couper le son du générique">🔊</button>
     <button class="iconbtn" id="ambBtn" aria-label="Couper le bruit de la mer">🌊</button>
   </div>
   <div class="guide">
@@ -357,6 +358,16 @@ $("ambBtn").onclick=()=>{ambOn=!ambOn;if(ambGain)ambGain.gain.setTargetAtTime(am
 
 /* ================= MUSIQUE ORIGINALE ================= */
 let music=null,musicOn=true,noiseBuf=null;
+/* ---- générique : fichier audio local assets/audio/generique.mp3 (lu au clic sur le bouton de départ) ---- */
+const GEN_SRC="assets/audio/generique.mp3",generique=new Audio();let genOk=false,genMuted=false;
+generique.preload="auto";generique.loop=true;generique.volume=.3;
+generique.addEventListener("error",()=>{genOk=false;
+  console.error(`[Fort des Défis] Fichier audio introuvable ou illisible : "${GEN_SRC}". Place le fichier dans le dossier assets/audio/ à côté de index.html. Le jeu continue avec sa musique d'origine.`);
+  if(music)music.out.gain.setTargetAtTime(musicOn?1:0,actx.currentTime,.3)});
+generique.addEventListener("playing",()=>{genOk=true;if(music)music.out.gain.setTargetAtTime(0,actx.currentTime,.3)});
+generique.src=GEN_SRC;
+function playGenerique(){generique.muted=genMuted;const p=generique.play();
+  if(p&&p.catch)p.catch(err=>{if(generique.error)return;console.error(`[Fort des Défis] Impossible de lire "${GEN_SRC}" :`,err&&err.message)})}
 const MN=n=>440*Math.pow(2,(n-69)/12);
 // thème original en ré mineur, 8 mesures de croches : [pas, note MIDI, durée en croches]
 const MEL=[[0,62,2],[2,69,2],[4,65,1],[5,67,1],[6,69,2],[8,70,2],[10,69,1],[11,67,1],[12,69,4],
@@ -405,12 +416,14 @@ function startMusic(){
   music={bus,out,step:0,next:c.currentTime+.15,tempo:100,mode:"theme"};
   musicLevel(.55);setInterval(schedule,25)}
 function musicLevel(v,mode){if(!music)return;if(mode){music.mode=mode;music.tempo=mode==="treasure"?132:100}
-  music.out.gain.setTargetAtTime(musicOn?1:0,actx.currentTime,.3);music.bus.gain.setTargetAtTime(v,actx.currentTime,.5)}
+  music.out.gain.setTargetAtTime(musicOn&&!genOk?1:0,actx.currentTime,.3);music.bus.gain.setTargetAtTime(v,actx.currentTime,.5)}
 function suspense(){if(!music)return;const c=actx,t0=c.currentTime;
   for(let i=0;i<22;i++){const k=i/21,t=t0+1.3*(1-Math.pow(1-k,1.6));timp(MN(38),t,.08+k*.3)}
   [50,53,57].forEach(n=>brass(MN(n),t0+1.35,.9,.045))}
 function victory(){if(!music)return;const t=actx.currentTime+.05;[[62,0,.14],[66,.14,.14],[69,.28,.14],[74,.42,.9]].forEach(([n,dt,d])=>brass(MN(n),t+dt,d,.07));timp(MN(38),t+.42,.5)}
-$("musBtn").onclick=()=>{musicOn=!musicOn;if(music)music.out.gain.setTargetAtTime(musicOn?1:0,actx.currentTime,.3);
+$("genBtn").onclick=()=>{genMuted=!genMuted;generique.muted=genMuted;$("genBtn").textContent=genMuted?"🔇":"🔊";
+  $("genBtn").setAttribute("aria-label",genMuted?"Réactiver le son du générique":"Couper le son du générique")};
+$("musBtn").onclick=()=>{musicOn=!musicOn;if(music)music.out.gain.setTargetAtTime(musicOn&&!genOk?1:0,actx.currentTime,.3);
   $("musBtn").textContent=musicOn?"🎵":"🔕";$("musBtn").setAttribute("aria-label",musicOn?"Couper la musique":"Remettre la musique")};
 
 /* ================= VOIX : perroquet & narrateur ================= */
@@ -1132,7 +1145,7 @@ $("nameForm").onsubmit=async e=>{
   e.preventDefault();if(sailing||arrived||!renderer)return;
   team=team.map(p=>({name:p.name.trim().replace(/^./,c=>c.toUpperCase()),age:p.age})).filter(p=>p.name);if(!team.length)team=[{name:"Capitaine",age:7}];
   store("fortEquipe",team);turn=turn%team.length;updatePlate();
-  audio();try{actx.resume()}catch(_){}startAmbience();startMusic();fanfare();
+  audio();try{actx.resume()}catch(_){}startAmbience();startMusic();playGenerique();fanfare();
   $("intro").classList.add("sail");sailing=true;
   say(`En route, ${teamNames()} ! Regardez, le fort est là-bas !`);
   const p0=camera.position.clone(),end=new THREE.Vector3(0,FLOOR+EYE+1.2,66),look=new THREE.Vector3(0,7,0);
