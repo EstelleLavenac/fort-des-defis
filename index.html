@@ -1349,14 +1349,88 @@ function pickRiddles(pool,n){let seen=load("fortVues",[]);let fresh=pool.filter(
   if(fresh.length<n){seen=seen.filter(q=>!pool.some(r=>r[0]===q));fresh=pool.slice()}
   const out=shuffle(fresh).slice(0,n);seen.push(...out.map(r=>r[0]));store("fortVues",seen);return out}
 
+function trouillardMesh(){const g=new THREE.Group();
+  const skin=new THREE.MeshStandardMaterial({color:C("#e9b994"),roughness:.65}),coat=new THREE.MeshStandardMaterial({color:C("#6b4a2e"),roughness:.85}),wool=new THREE.MeshStandardMaterial({color:C("#c8352b"),roughness:1}),grey=new THREE.MeshStandardMaterial({color:C("#b9b4ab"),roughness:1});
+  const body=new THREE.Mesh(new THREE.SphereGeometry(.5,22,16),coat);body.scale.set(1,1.15,.85);body.position.y=.6;g.add(body);
+  [.45,.65,.85].forEach(y=>{const b=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),new THREE.MeshStandardMaterial({color:C("#d8b048"),metalness:.7,roughness:.3}));b.position.set(0,y,.43);g.add(b)});
+  const sc=document.createElement("canvas");sc.width=64;sc.height=16;const k=sc.getContext("2d");for(let x=0;x<64;x+=16){k.fillStyle="#2f8a4a";k.fillRect(x,0,8,16);k.fillStyle="#f2c230";k.fillRect(x+8,0,8,16)}
+  const scM=new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(sc),roughness:1});
+  const scarf=new THREE.Mesh(new THREE.TorusGeometry(.24,.09,8,20),scM);scarf.rotation.x=Math.PI/2;scarf.position.y=1.12;g.add(scarf);
+  const tail=new THREE.Mesh(new THREE.BoxGeometry(.16,.7,.05),scM);tail.position.set(.14,.82,.4);tail.rotation.z=-.15;g.add(tail);
+  const headG=new THREE.Group();headG.position.y=1.38;g.add(headG);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.28,24,18),skin);headG.add(head);
+  const eyeW=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.3}),pup=new THREE.MeshBasicMaterial({color:0x1a120a}),eyes=[];
+  [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.075,14,10),eyeW);e.position.set(s*.1,.05,.23);headG.add(e);
+    const p=new THREE.Mesh(new THREE.SphereGeometry(.03,8,6),pup);p.position.set(s*.1,.05,.3);headG.add(p);eyes.push(e);
+    const brow=new THREE.Mesh(new THREE.BoxGeometry(.11,.03,.04),grey);brow.position.set(s*.1,.16,.25);brow.rotation.z=s*.35;headG.add(brow);
+    const ear=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),skin);ear.scale.set(.5,1,.8);ear.position.set(s*.28,0,0);headG.add(ear);
+    const stub=new THREE.Mesh(new THREE.SphereGeometry(.06,8,6),grey);stub.scale.set(1.6,.6,.8);stub.position.set(s*.09,-.11,.24);headG.add(stub)});
+  const nose=new THREE.Mesh(new THREE.SphereGeometry(.07,12,10),new THREE.MeshStandardMaterial({color:C("#e07f6a"),roughness:.5}));nose.position.set(0,-.02,.29);headG.add(nose);
+  const mouth=new THREE.Mesh(new THREE.TorusGeometry(.05,.014,6,14),new THREE.MeshBasicMaterial({color:0x3a1010}));mouth.position.set(0,-.17,.25);headG.add(mouth);
+  const hat=new THREE.Mesh(new THREE.SphereGeometry(.3,20,14,0,Math.PI*2,0,Math.PI/2),wool);hat.scale.set(1,1.25,1);hat.position.y=.08;headG.add(hat);
+  const cuff=new THREE.Mesh(new THREE.TorusGeometry(.28,.05,8,24),wool);cuff.rotation.x=Math.PI/2;cuff.position.y=.1;headG.add(cuff);
+  const pom=new THREE.Mesh(new THREE.SphereGeometry(.09,10,8),new THREE.MeshStandardMaterial({color:0xf4f1ea,roughness:1}));pom.position.set(0,.47,0);headG.add(pom);
+  const armL=new THREE.Group();armL.position.set(-.45,.95,0);g.add(armL);const aL=new THREE.Mesh(new THREE.CylinderGeometry(.09,.08,.55,10),coat);aL.position.y=-.27;armL.add(aL);
+  const hL=new THREE.Mesh(new THREE.SphereGeometry(.08,10,8),skin);hL.position.y=-.56;armL.add(hL);armL.rotation.set(-2,0,.35);
+  const lan=new THREE.Group();lan.position.y=-.62;armL.add(lan);
+  lan.add(new THREE.Mesh(new THREE.BoxGeometry(.18,.24,.18),new THREE.MeshStandardMaterial({color:C("#ffd27a"),emissive:C("#ffa040"),emissiveIntensity:.9})));
+  const lt=new THREE.Mesh(new THREE.ConeGeometry(.14,.1,4),new THREE.MeshStandardMaterial({color:0x333338,metalness:.7}));lt.position.y=.17;lt.rotation.y=Math.PI/4;lan.add(lt);
+  const ll=new THREE.PointLight(0xffb060,1.2,5,2);lan.add(ll);
+  const armR=new THREE.Group();armR.position.set(.45,.95,0);g.add(armR);const aR=new THREE.Mesh(new THREE.CylinderGeometry(.09,.08,.55,10),coat);aR.position.y=-.27;armR.add(aR);
+  const hR=new THREE.Mesh(new THREE.SphereGeometry(.08,10,8),skin);hR.position.y=-.56;armR.add(hR);armR.rotation.set(-.5,0,-.3);
+  // le hibou sur l'épaule
+  const owl=new THREE.Group();owl.position.set(-.38,1.22,0);g.add(owl);
+  const fe=new THREE.MeshStandardMaterial({color:C("#8a6a48"),roughness:.9}),belly=new THREE.MeshStandardMaterial({color:C("#d8c09a"),roughness:.9});
+  const ob=new THREE.Mesh(new THREE.SphereGeometry(.14,14,10),fe);ob.scale.set(1,1.25,.9);ob.position.y=.14;owl.add(ob);
+  const obl=new THREE.Mesh(new THREE.SphereGeometry(.1,12,8),belly);obl.scale.set(1,1.2,.5);obl.position.set(0,.11,.08);owl.add(obl);
+  const oh=new THREE.Group();oh.position.y=.34;owl.add(oh);const ohd=new THREE.Mesh(new THREE.SphereGeometry(.12,14,10),fe);oh.add(ohd);
+  [-1,1].forEach(s=>{const ey=new THREE.Mesh(new THREE.CircleGeometry(.045,14),new THREE.MeshBasicMaterial({color:C("#ffc928")}));ey.position.set(s*.05,.01,.115);oh.add(ey);
+    const p=new THREE.Mesh(new THREE.CircleGeometry(.022,10),pup);p.position.set(s*.05,.01,.117);oh.add(p);
+    const tuft=new THREE.Mesh(new THREE.ConeGeometry(.03,.09,6),fe);tuft.position.set(s*.07,.12,0);tuft.rotation.z=-s*.4;oh.add(tuft)});
+  const beak=new THREE.Mesh(new THREE.ConeGeometry(.02,.05,6),new THREE.MeshStandardMaterial({color:C("#d8a020")}));beak.rotation.x=Math.PI/2+.4;beak.position.set(0,-.03,.12);oh.add(beak);
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true});return{g,headG,mouth,armR,armL,owl,oh,eyes}}
 function vigie(){
-  const zone=openPanel("L'énigme de la vigie",`Hou hou ! Bonjour ${cap()}. Je suis Père Trouillard, le gardien de la vigie. Écoute bien mes énigmes en rimes !`);
-  const riddles=pickRiddles(LV()===2?HARD:RIME,3);
-  let round=0;zone.innerHTML=`<div class="keeper"><b>🦉</b><span>Père Trouillard</span></div><div class="q" style="width:100%;display:flex;justify-content:center"></div>`;const qz=zone.lastChild;
-  function next(){setDots(round,3);const [q,ans,opts]=riddles[round]||riddles[0];if(round===0)timers.push(setTimeout(()=>sayP(q),6500));else sayP(q);
+  const riddles=pickRiddles(LV()===2?HARD:RIME,3);let T;
+  const zone=openRoom("L'énigme de la vigie",`Ah ! Oh ! Tu m'as fait peur… Bonjour ${cap()}. Je suis Père Trouillard, le gardien de la vigie. Mon hibou et moi, on a des énigmes en rimes pour toi !`,()=>{
+    const r=newRoom({fov:50,hemi:.35,fogNear:12,fogFar:40});const S=r.scene;
+    const st=stoneMat(3,1.5,"#b5a586").clone();st.side=THREE.BackSide;const tw=new THREE.Mesh(new THREE.CylinderGeometry(4.2,4.2,4.4,40,1,true),st);tw.position.y=2.2;S.add(tw);
+    const fl=new THREE.Mesh(new THREE.CircleGeometry(4.2,40),new THREE.MeshStandardMaterial({map:tex(WOOD,3,3),color:C("#8a6440"),roughness:.85}));fl.rotation.x=-Math.PI/2;fl.receiveShadow=true;S.add(fl);
+    const ce=new THREE.Mesh(new THREE.CircleGeometry(4.2,40),new THREE.MeshStandardMaterial({map:tex(WOOD,2,2),color:C("#5a3e28"),roughness:.9}));ce.rotation.x=Math.PI/2;ce.position.y=4.4;S.add(ce);
+    for(let i=0;i<6;i++){const a=i/6*Math.PI*2;const b=box(.25,.25,8.2,new THREE.MeshStandardMaterial({map:tex(WOOD,.3,2),color:C("#4a3220")}),0,4.25,0,S);b.rotation.y=a}
+    const sky=new THREE.MeshBasicMaterial({color:C("#9cc8e8")}),seaM=new THREE.MeshBasicMaterial({color:C("#2b6f96")});
+    [-.9,.9].forEach((a,i)=>{const x=Math.sin(a)*4.15,z=-Math.cos(a)*4.15;const w=new THREE.Mesh(new THREE.ShapeGeometry(archShape(1.2,1.7),12),sky);w.position.set(x,1.6,z);w.lookAt(0,1.6,0);S.add(w);
+      const s2=new THREE.Mesh(new THREE.PlaneGeometry(1.2,.5),seaM);s2.position.set(x*.999,1.85,z*.999);s2.lookAt(0,1.85,0);S.add(s2)});
+    const desk=new THREE.MeshStandardMaterial({map:tex(WOOD,1.5,1),color:C("#7a5030"),roughness:.75});
+    box(2.6,.12,1.2,desk,0,.92,-.6,S);[[-1.2,-1.1],[1.2,-1.1],[-1.2,-.1],[1.2,-.1]].forEach(([x,z])=>box(.12,.9,.12,desk,x,.45,z,S));
+    const tele=new THREE.Mesh(new THREE.CylinderGeometry(.05,.08,.7,12),new THREE.MeshStandardMaterial({color:C("#c49a4a"),metalness:.85,roughness:.3}));tele.rotation.z=Math.PI/2;tele.rotation.y=.4;tele.position.set(.7,1.02,-.5);S.add(tele);
+    const hg=new THREE.Group();hg.position.set(-.8,.98,-.4);S.add(hg);const glassM=new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:.35,roughness:.05});
+    [.12,-.12].forEach((y,i)=>{const c=new THREE.Mesh(new THREE.ConeGeometry(.09,.12,16),glassM);c.position.y=.14+y*.5;if(i)c.rotation.x=Math.PI;hg.add(c)});
+    const sand=new THREE.Mesh(new THREE.ConeGeometry(.06,.06,12),new THREE.MeshStandardMaterial({color:C("#e2c27a")}));sand.position.y=.05;hg.add(sand);
+    const perch=box(.06,1.5,.06,desk,1.6,.75,-1.9,S);box(.5,.05,.05,desk,1.6,1.5,-1.9,S);
+    T=trouillardMesh();T.g.scale.setScalar(1.12);T.g.position.set(0,0,-1.75);S.add(T.g);
+    roomTorch(r,-4.1,2.6,1.2,1,0);roomTorch(r,4.1,2.6,1.2,-1,0);
+    setBase(r,new THREE.Vector3(0,1.6,1.3),new THREE.Vector3(0,1.4,-1.6),1.5);return r});
+  let round=0,talkT=6,scare=0,scareIn=4+Math.random()*4,hoot=0;
+  zone.insertAdjacentHTML("beforeend",`<div class="keeper"><b>🦉</b><span>Père Trouillard</span></div><div class="q" style="width:100%;display:flex;justify-content:center"></div>`);const qz=zone.lastChild;
+  function owlHoot(){hoot=1.4;beep([392,330],.22,"sine",.07);timers.push(setTimeout(()=>beep([392,330],.22,"sine",.07),360))}
+  function startle(){scare=1;beep([180,140],.12,"square",.05)}
+  room.update=(dt,t)=>{flicker(room,t);talkT-=dt;const talk=talkT>0;
+    scareIn-=dt;if(scareIn<=0){startle();scareIn=7+Math.random()*7}
+    scare=Math.max(0,scare-dt*1.6);hoot=Math.max(0,hoot-dt);
+    const jump=Math.sin(Math.min(1,scare)*Math.PI)*scare;
+    T.g.position.y=jump*.18;T.g.rotation.z=Math.sin(t*40)*.03*scare;
+    T.eyes.forEach(e=>e.scale.setScalar(1+scare*.5));
+    T.headG.rotation.x=talk?Math.sin(t*4)*.05:Math.sin(t*.8)*.03;T.headG.rotation.y=scare?Math.sin(t*25)*.2*scare:Math.sin(t*.45)*.18;
+    T.mouth.scale.set(1,talk?.6+Math.abs(Math.sin(t*12))*.9:.5+scare,1);
+    T.armR.rotation.x=-.5-(talk?Math.abs(Math.sin(t*3))*.5:0)-jump*1.2;T.armL.rotation.x=-2+Math.sin(t*1.1)*.06+jump*.4;
+    T.oh.rotation.y=hoot?Math.sin(t*6)*.6:Math.sin(t*.3)*.9;T.owl.position.y=1.22+(hoot?Math.abs(Math.sin(t*10))*.04:0)+jump*.1};
+  function next(){setDots(round,3);const [q,ans,opts]=riddles[round]||riddles[0];
+    const ask=()=>{owlHoot();timers.push(setTimeout(()=>{sayP(q);talkT=Math.min(10,2+q.length*.06)},700))};
+    if(round===0)timers.push(setTimeout(ask,7000));else ask();
     qz.innerHTML=`<div class="grid" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;const g=qz.firstChild;
     shuffle(opts).forEach(x=>{const b=document.createElement("button");b.className="pick";b.textContent=x;
-      b.onclick=()=>{if(x===ans){b.classList.add("good");yay();round++;if(round===3)secure(),setTimeout(()=>win("vigie"),700);else timers.push(setTimeout(next,1000))}else wrong(b,"Hou hou, ce n'est pas ça ! Réécoute bien : "+q)};g.appendChild(b)})}
+      b.onclick=()=>{if(x===ans){b.classList.add("good");yay();talkT=1;round++;if(round===3)secure(),setTimeout(()=>win("vigie"),700);else timers.push(setTimeout(next,1000))}
+        else{startle();wrong(b,"Oh là là, ce n'est pas ça ! Réécoute bien : "+q);talkT=3}};g.appendChild(b)})}
   next()}
 /* ================= RENDU PHOTO (textures et ciel réels, Poly Haven, CC0) ================= */
 const PH="https://dl.polyhaven.org/file/ph-assets/";

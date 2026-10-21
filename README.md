@@ -17,7 +17,7 @@ On arrive en bateau devant un fort posé sur la mer, puis on marche soi-même su
 - **La pêche** : attraper 8 poissons.
 - **L'intrus** : trouver celui qui n'est pas de la même famille.
 - **Les devinettes** : écouter les devinettes de Papi Goémon, le vieux gardien à la barbe blanche.
-- **L'énigme de la vigie** : dans la tour de guet, résoudre les énigmes en rimes du Père Trouillard, le vieux hibou.
+- **L'énigme de la vigie** : en haut de la tour de guet, résoudre les énigmes en rimes du Père Trouillard, le gardien froussard, et de son vieux hibou.
 - **Le labyrinthe** : rejoindre la clé avant que le sablier soit vide.
 - **Les jarres** : suivre des yeux la jarre qui cache la clé.
 - **Le pont de corde** : traverser en gardant l'équilibre.
