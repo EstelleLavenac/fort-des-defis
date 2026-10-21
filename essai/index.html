@@ -1610,11 +1610,11 @@ function escalade(){
     holds.push(row)}
   rope=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,1,6),new THREE.MeshStandardMaterial({color:C("#e8d9a8"),roughness:1}));S.add(rope);
   hands={L:handMesh(-1),R:handMesh(1)};S.add(hands.L,hands.R);
-  hands.L.position.set(-.38,1.15,.32);hands.R.position.set(.38,1.15,.32);
+  hands.L.position.set(-.42,1.2,.45);hands.R.position.set(.42,1.2,.45);hands.L.scale.setScalar(1.35);hands.R.scale.setScalar(1.35);
   const crumble=()=>{const c=actx;if(!c||!noiseBuf)return;const n=c.createBufferSource();n.buffer=noiseBuf;const f=c.createBiquadFilter(),g=c.createGain();f.type="bandpass";f.frequency.value=600;
     n.connect(f);f.connect(g);g.connect(c.destination);const t=c.currentTime;g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);n.start(t);n.stop(t+.55)};
   const anims=[];const anim=(ms,fn)=>new Promise(res=>anims.push({t0:performance.now(),ms,fn,res}));
-  const handOn=(h,x,y)=>new THREE.Vector3(x,y-.05,.32);
+  const handOn=(h,x,y)=>new THREE.Vector3(x,y+.02,.45);
   let nextHand="R";
   async function grab(h){if(busyClimb||!h)return;
     if(h.row!==cur+1){sayP("Prends une prise juste au-dessus de toi !");return}
@@ -1624,9 +1624,9 @@ function escalade(){
       holds[h.row-1][h.col].broken=true;await anim(300,k=>{H.position.lerpVectors(to,from,k)});
       if(cur>0){const y0=camY;cur--;await anim(450,k=>{camY=y0-DY*k;hands.L.position.y=hands.R.position.y=Math.max(hands.L.position.y,hands.R.position.y)-DY*k*.02})}
       sayP("Aïe, la prise s'est effritée ! Prends une prise de couleur.");busyClimb=false;return}
-    tick();await anim(380,k=>{H.position.lerpVectors(from,to,k);H.position.z=.32+Math.sin(k*Math.PI)*.15});
+    tick();await anim(380,k=>{H.position.lerpVectors(from,to,k);H.position.z=.45+Math.sin(k*Math.PI)*.15});
     const other=hands[nextHand==="R"?"L":"R"],o0=other.position.clone(),y0=camY,x0=camX,tx=h.g.position.x*.7;cur++;
-    await anim(520,k=>{camY=y0+DY*k;camX=x0+(tx-x0)*k;other.position.set(o0.x+(h.g.position.x+(nextHand==="R"?-.45:.45)-o0.x)*k,o0.y+(to.y-.55-o0.y)*k,.32+Math.sin(k*Math.PI)*.12)});
+    await anim(520,k=>{camY=y0+DY*k;camX=x0+(tx-x0)*k;other.position.set(o0.x+(h.g.position.x+(nextHand==="R"?-.45:.45)-o0.x)*k,o0.y+(to.y-.55-o0.y)*k,.45+Math.sin(k*Math.PI)*.12)});
     nextHand=nextHand==="R"?"L":"R";busyClimb=false;
     if(cur===N){secure();busyClimb=true;const yy=camY;await anim(900,k=>{camY=yy+1.4*k;camX=camX*(1-k)});yay();setTimeout(()=>win("escalade"),700)}
     else if(cur===Math.floor(N/2)){sayP("Tu es à mi-hauteur ! Oh là là, regarde comme la mer est loin…");lookDown=1}}
@@ -1645,7 +1645,7 @@ function escalade(){
     const ld=Math.sin(Math.min(1,lookDown)*Math.PI),c=room.camera,ey=camY+1.5+Math.sin(t*1.3)*.02,sx=(Math.random()-.5)*shake*.12,sy=(Math.random()-.5)*shake*.12;
     const fv=c.aspect<1?86:70;if(c.fov!==fv){c.fov=fv;c.updateProjectionMatrix()}
     c.position.set(camX+sx,ey+sy,1.9+ld*.5);c.lookAt(camX*.6,ey+.55-ld*4.5,0);
-    const topY=N*DY+1.5;rope.scale.y=Math.max(.1,topY-(ey-.4));rope.position.set(camX+.25,(topY+ey-.4)/2,.7)}}
+    const topY=N*DY+1.5;rope.scale.y=Math.max(.1,topY-(ey-.4));rope.position.set(camX+.75,(topY+ey-.4)/2,.7)}}
 
 /* ---------- La corniche (dehors, au-dessus du vide) ---------- */
 function windNoise(){const c=actx;if(!c||!noiseBuf)return null;const n=c.createBufferSource();n.buffer=noiseBuf;n.loop=true;
