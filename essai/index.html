@@ -1372,9 +1372,9 @@ function trouillardMesh(){const g=new THREE.Group();
   const cuff=new THREE.Mesh(new THREE.TorusGeometry(.28,.05,8,24),wool);cuff.rotation.x=Math.PI/2;cuff.position.y=.1;headG.add(cuff);
   const pom=new THREE.Mesh(new THREE.SphereGeometry(.09,10,8),new THREE.MeshStandardMaterial({color:0xf4f1ea,roughness:1}));pom.position.set(0,.47,0);headG.add(pom);
   const armL=new THREE.Group();armL.position.set(-.45,.95,0);g.add(armL);const aL=new THREE.Mesh(new THREE.CylinderGeometry(.09,.08,.55,10),coat);aL.position.y=-.27;armL.add(aL);
-  const hL=new THREE.Mesh(new THREE.SphereGeometry(.08,10,8),skin);hL.position.y=-.56;armL.add(hL);armL.rotation.set(-.9,0,.25);
-  const lan=new THREE.Group();lan.position.y=-.7;armL.add(lan);
-  lan.add(new THREE.Mesh(new THREE.BoxGeometry(.18,.24,.18),new THREE.MeshStandardMaterial({color:C("#ffd27a"),emissive:C("#ffa040"),emissiveIntensity:1.6,transparent:true,opacity:.9})));
+  const hL=new THREE.Mesh(new THREE.SphereGeometry(.08,10,8),skin);hL.position.y=-.56;armL.add(hL);armL.rotation.set(-2,0,.35);
+  const lan=new THREE.Group();lan.position.y=-.62;armL.add(lan);
+  lan.add(new THREE.Mesh(new THREE.BoxGeometry(.18,.24,.18),new THREE.MeshStandardMaterial({color:C("#ffd27a"),emissive:C("#ffa040"),emissiveIntensity:.9})));
   const lt=new THREE.Mesh(new THREE.ConeGeometry(.14,.1,4),new THREE.MeshStandardMaterial({color:0x333338,metalness:.7}));lt.position.y=.17;lt.rotation.y=Math.PI/4;lan.add(lt);
   const ll=new THREE.PointLight(0xffb060,1.2,5,2);lan.add(ll);
   const armR=new THREE.Group();armR.position.set(.45,.95,0);g.add(armR);const aR=new THREE.Mesh(new THREE.CylinderGeometry(.09,.08,.55,10),coat);aR.position.y=-.27;armR.add(aR);
@@ -1408,9 +1408,9 @@ function vigie(){
     [.12,-.12].forEach((y,i)=>{const c=new THREE.Mesh(new THREE.ConeGeometry(.09,.12,16),glassM);c.position.y=.14+y*.5;if(i)c.rotation.x=Math.PI;hg.add(c)});
     const sand=new THREE.Mesh(new THREE.ConeGeometry(.06,.06,12),new THREE.MeshStandardMaterial({color:C("#e2c27a")}));sand.position.y=.05;hg.add(sand);
     const perch=box(.06,1.5,.06,desk,1.6,.75,-1.9,S);box(.5,.05,.05,desk,1.6,1.5,-1.9,S);
-    T=trouillardMesh();T.g.position.set(0,0,-1.75);S.add(T.g);
+    T=trouillardMesh();T.g.scale.setScalar(1.12);T.g.position.set(0,0,-1.75);S.add(T.g);
     roomTorch(r,-4.1,2.6,1.2,1,0);roomTorch(r,4.1,2.6,1.2,-1,0);
-    setBase(r,new THREE.Vector3(0,1.55,1.9),new THREE.Vector3(0,1.3,-1.6),1.5);return r});
+    setBase(r,new THREE.Vector3(0,1.6,1.3),new THREE.Vector3(0,1.4,-1.6),1.5);return r});
   let round=0,talkT=6,scare=0,scareIn=4+Math.random()*4,hoot=0;
   zone.insertAdjacentHTML("beforeend",`<div class="keeper"><b>🦉</b><span>Père Trouillard</span></div><div class="q" style="width:100%;display:flex;justify-content:center"></div>`);const qz=zone.lastChild;
   function owlHoot(){hoot=1.4;beep([392,330],.22,"sine",.07);timers.push(setTimeout(()=>beep([392,330],.22,"sine",.07),360))}
@@ -1423,7 +1423,7 @@ function vigie(){
     T.eyes.forEach(e=>e.scale.setScalar(1+scare*.5));
     T.headG.rotation.x=talk?Math.sin(t*4)*.05:Math.sin(t*.8)*.03;T.headG.rotation.y=scare?Math.sin(t*25)*.2*scare:Math.sin(t*.45)*.18;
     T.mouth.scale.set(1,talk?.6+Math.abs(Math.sin(t*12))*.9:.5+scare,1);
-    T.armR.rotation.x=-.5-(talk?Math.abs(Math.sin(t*3))*.5:0)-jump*1.2;T.armL.rotation.z=.25+jump*.6;
+    T.armR.rotation.x=-.5-(talk?Math.abs(Math.sin(t*3))*.5:0)-jump*1.2;T.armL.rotation.x=-2+Math.sin(t*1.1)*.06+jump*.4;
     T.oh.rotation.y=hoot?Math.sin(t*6)*.6:Math.sin(t*.3)*.9;T.owl.position.y=1.22+(hoot?Math.abs(Math.sin(t*10))*.04:0)+jump*.1};
   function next(){setDots(round,3);const [q,ans,opts]=riddles[round]||riddles[0];
     const ask=()=>{owlHoot();timers.push(setTimeout(()=>{sayP(q);talkT=Math.min(10,2+q.length*.06)},700))};
