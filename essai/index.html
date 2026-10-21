@@ -122,6 +122,7 @@ button:focus-visible,input:focus-visible{outline:4px solid var(--gold);outline-o
 .lrbtns{display:flex;gap:18px;justify-content:center;margin-top:10px}.lrbtns .big{font-size:34px;padding:12px 28px;touch-action:none;user-select:none}
 .balance .needle.ball{width:22px;margin-left:-11px;border-radius:50%;top:4px;bottom:4px;background:#fff;box-shadow:0 0 0 3px #2c1406}.balance .needle.bad{background:#e04b3a}
 .windcue{min-height:30px;font-weight:700;font-size:20px;color:#fff;background:rgba(30,90,160,.85);border-radius:999px;padding:4px 16px;opacity:0;transition:opacity .2s}.windcue.on{opacity:1;animation:bob .5s infinite}
+.room .bells{gap:12px}.room .bell{width:64px!important;height:64px!important;font-size:26px!important}
 .pad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,58px);gap:6px}
 .pad button{border:0;border-radius:14px;background:#fffaf0;box-shadow:0 4px 0 #a88962;font-size:30px}
 .pad [data-d=up]{grid-column:2;grid-row:1}.pad [data-d=left]{grid-column:1;grid-row:2}.pad [data-d=down]{grid-column:2;grid-row:2}.pad [data-d=right]{grid-column:3;grid-row:2}
@@ -913,7 +914,7 @@ function buildGallery(){
   for(let i=0;i<=20;i++){const s=ST0+(ST1-ST0)*i/20,q=ringPt(s,SIN+.85),h=FLOOR+(GY+.08-FLOOR)*i/20;pts.push(new THREE.Vector3(q.x,h+1,q.z))}
   scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),60,.06,6),railM));
   for(let i=0;i<=10;i++){const s=ST0+(ST1-ST0)*i/10,q=ringPt(s,SIN+.85),h=FLOOR+(GY+.08-FLOOR)*i/10;box(.09,1,.09,railM,q.x,h+.5,q.z)}
-  [[15.6,0],[38.2,1],[120.9,0],[146.5,1]].forEach(([s,l],i)=>{const q=ringPt(s,.02);makeTorch(q.x,GY+3.3,q.z,20+i,-q.nx,-q.nz,!!l)})}
+  [15.6,38.2,120.9,146.5].forEach((s,i)=>{const q=ringPt(s,.02);makeTorch(q.x,GY+3.3,q.z,20+i,-q.nx,-q.nz,false)})}
 
 /* ---- les petits mousses qui suivent l'équipe ---- */
 const helpers=[];let trail=[],idleT=0,helpersSaid=false;
@@ -1070,14 +1071,21 @@ function frame(){
   if(Math.abs(gateObj.raised-gateWant)>.001){gateObj.raised+=(gateWant-gateObj.raised)*.025;if(Math.abs(gateObj.raised-gateWant)<.003)gateObj.raised=gateWant}
   gateObj.bars.position.y=gateObj.raised*7.4;gateObj.lockG.visible=gateObj.raised<.05;gateObj.light.intensity=.15+gateObj.raised*(2.2+Math.sin(t*3)*.3);
   window._boat.position.x+=dt*3;if(window._boat.position.x>700)window._boat.position.x=-700;
-  if(room){if(room.update)room.update(dt,t);renderer.shadowMap.needsUpdate=true;renderFrame(room.scene,room.camera,dt);return}
+  frameN++;perfTick(dt);
+  if(room){if(room.update)room.update(dt,t);renderer.shadowMap.needsUpdate=frameN%2===0;renderFrame(room.scene,room.camera,dt);return}
   renderer.shadowMap.needsUpdate=false;
-  if(!(P.fp&&sdStadium(camera.position.x,camera.position.z,FR-FT)<-.5))renderReflection();
-  renderer.shadowMap.needsUpdate=true;
+  if(frameN%2===0&&!(P.fp&&sdStadium(camera.position.x,camera.position.z,FR-FT)<-.5))renderReflection();
+  renderer.shadowMap.needsUpdate=frameN%(QL>1?4:3)===0;
   renderFrame(scene,camera,dt)}
 
+/* qualité automatique : si le jeu rame, on allège le rendu (et on s'en souvient) */
+let frameN=0,QL=0;try{QL=Math.min(3,+localStorage.getItem("fortQualite")||0)}catch(e){}
+const PRS=[1.6,1.25,1,.75],pf={t:0,n:0,warm:0};
+function applyQuality(){renderer.setPixelRatio(Math.min(devicePixelRatio||1,PRS[QL]));sizeAll();if(bloomPass)bloomPass.enabled=QL<3;try{localStorage.setItem("fortQualite",QL)}catch(e){}}
+function perfTick(dt){if(document.hidden)return;pf.warm+=dt;if(pf.warm<6)return;pf.t+=Math.min(dt,.25);pf.n++;
+  if(pf.t>2.5){const fps=pf.n/pf.t;pf.t=0;pf.n=0;if(fps<40&&QL<3){QL++;applyQuality()}}}
 function sizeAll(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();if(composer)composer.setSize(innerWidth,innerHeight);fitRoom();
-  const pr=renderer.getPixelRatio();reflRT.setSize(Math.floor(innerWidth*pr*.6),Math.floor(innerHeight*pr*.6))}
+  const pr=renderer.getPixelRatio();reflRT.setSize(Math.floor(innerWidth*pr*.45),Math.floor(innerHeight*pr*.45))}
 function init(){
   if(!window.THREE){showError("la bibliothèque 3D ne s'est pas chargée. Vérifie la connexion internet puis recharge la page.");return}
   C=h=>new THREE.Color(h).convertSRGBToLinear();
@@ -1085,7 +1093,7 @@ function init(){
   bias=new THREE.Matrix4().set(.5,0,0,.5,0,.5,0,.5,0,0,.5,.5,0,0,0,1);
   tmpV=new THREE.Vector3();curLook=new THREE.Vector3();ray=new THREE.Raycaster();mv=new THREE.Vector2();
   renderer=new THREE.WebGLRenderer({antialias:true});
-  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1,PRS[QL]));
   renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.NoToneMapping;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
   $("gl").appendChild(renderer.domElement);maxAniso=Math.min(8,renderer.capabilities.getMaxAnisotropy());
@@ -1679,7 +1687,7 @@ function keeperMesh(){const g=new THREE.Group();
   const beard=new THREE.Mesh(new THREE.ConeGeometry(.27,.95,18,1,true),white);beard.rotation.x=Math.PI;beard.position.set(0,-.42,.05);beardG.add(beard);
   for(let i=0;i<9;i++){const s=new THREE.Mesh(new THREE.SphereGeometry(.12-i*.008,10,8),white);const a=(i/8-.5)*2.2;s.position.set(Math.sin(a)*.22,-.02-Math.abs(a)*.04-i%3*.08,Math.cos(a)*.12);beardG.add(s)}
   const mouth=new THREE.Mesh(new THREE.SphereGeometry(.05,10,6),new THREE.MeshBasicMaterial({color:0x3a1010}));mouth.scale.set(1.4,.4,.6);mouth.position.set(0,-.1,.27);headG.add(mouth);
-  [-1,1].forEach(s=>{const m=new THREE.Mesh(new THREE.CapsuleGeometry?new THREE.CapsuleGeometry(.04,.16,4,8):new THREE.CylinderGeometry(.04,.04,.2,8),white);m.rotation.z=s*1.15;m.position.set(s*.1,-.05,.29);headG.add(m);
+  [-1,1].forEach(s=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(.045,.035,.2,8),white);m.rotation.z=s*1.15;m.position.set(s*.1,-.05,.29);headG.add(m);
     const brow=new THREE.Mesh(new THREE.BoxGeometry(.13,.04,.05),white);brow.position.set(s*.11,.14,.27);brow.rotation.z=-s*.2;headG.add(brow);
     const eye=new THREE.Mesh(new THREE.SphereGeometry(.03,8,6),new THREE.MeshBasicMaterial({color:0x2a1a10}));eye.position.set(s*.1,.06,.28);headG.add(eye);
     const lens=new THREE.Mesh(new THREE.TorusGeometry(.065,.012,6,18),new THREE.MeshStandardMaterial({color:0x6a5030,metalness:.6}));lens.position.set(s*.1,.06,.29);headG.add(lens);
@@ -1783,7 +1791,7 @@ function cloches(){
       const tas=new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),new THREE.MeshStandardMaterial({color:C(c[0]),roughness:.6}));tas.position.y=-1.25*s-1.45;pv.add(tas);
       const gl=new THREE.PointLight(C(c[1]),0,5,2);gl.position.y=-1.3*s;pv.add(gl);
       pv.traverse(o=>{o.userData.bell=i;if(o.isMesh)o.castShadow=true});B.push({pv,band,gl,sw:0,v:0,flash:0})});
-    setBase(r,new THREE.Vector3(0,1.7,3.6),new THREE.Vector3(0,1.9,-1.2),1.5);return r});
+    setBase(r,new THREE.Vector3(0,1.6,4.7),new THREE.Vector3(0,2,-1.2),1.5);return r});
   zone.innerHTML=`<div class="bells">${cols.map((c,i)=>`<button class="bell" data-i="${i}" style="--c:${c[0]};--h:${c[1]}" aria-label="Cloche ${i+1}">🔔</button>`).join("")}</div>`;
   const bells=[...zone.querySelectorAll(".bell")],len=[4,5,7][LV()],rounds=3;let round=0,seq=[],pos=0,listening=false;
   function ring(i){bells[i].classList.remove("on");void bells[i].offsetWidth;bells[i].classList.add("on");beep([cols[i][2],cols[i][2]*2.01],.25,"sine",.13);timers.push(setTimeout(()=>bells[i].classList.remove("on"),420));
