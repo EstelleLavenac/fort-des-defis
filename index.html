@@ -1215,7 +1215,7 @@ function lose(id){
   const zone=panel.querySelector(".zone");panel.querySelector(".dots").innerHTML="";
   zone.innerHTML=`<div class="lost"><span>⛓️</span><p>Le sablier est vide…<br><b>Tu es prisonnier !</b></p></div>
     <div class="keeper"><b>🦉</b><span>Père Trouillard</span></div><div class="grid prisonq" style="grid-template-columns:repeat(3,1fr);max-width:480px"></div>`;
-  sayP("Pour sortir de prison, réponds à l'énigme de Père Trouillard. "+q,`Le temps est écoulé ! ${cap()} est prisonnier !`);
+  sayP("Pour sortir de prison, réponds à l'énigme du Père Trouillard. "+q,`Le temps est écoulé ! ${cap()} est prisonnier !`);
   const g=zone.querySelector(".prisonq");let freed=false;
   shuffle(opts).forEach(x=>{const b=document.createElement("button");b.className="pick";b.textContent=x;
     b.onclick=()=>{if(freed)return;
