@@ -6,7 +6,7 @@ On arrive en bateau devant un fort posé sur la mer, puis on marche soi-même su
 
 ## Les épreuves
 
-À chaque nouvelle partie, les portes de la cour reçoivent 9 épreuves tirées au sort parmi 15, et les énigmes sont choisies dans une grande réserve : on ne retombe pas sur les mêmes tant qu'on ne les a pas toutes vues. Le bouton « Nouvelle partie » au départ relance une partie toute neuve.
+À chaque nouvelle partie, les portes de la cour reçoivent 9 épreuves tirées au sort parmi 16, et les énigmes sont choisies dans une grande réserve : on ne retombe pas sur les mêmes tant qu'on ne les a pas toutes vues. Le bouton « Nouvelle partie » au départ relance une partie toute neuve.
 
 - **Les cloches** : en haut de la tour, rejouer la mélodie des cloches dans le bon ordre.
 - **Les ombres** : retrouver l'ombre qui correspond à l'objet.
@@ -24,6 +24,7 @@ On arrive en bateau devant un fort posé sur la mer, puis on marche soi-même su
 - **La cellule d'eau** : pomper vite pour faire remonter la clé.
 - **Le rondin** : avancer sur un tronc qui tourne au-dessus de l'eau sans tomber, en gardant l'équilibre.
 - **La corniche** : dehors, tout en haut du fort, avancer sur une corniche au-dessus du vide sans se laisser emporter par le vent.
+- **Le plongeon** : sauter du haut du fort dans la mer, nager sous l'eau pour trouver la clé cachée dans un coquillage géant, sans se faire toucher par les poissons-serpents.
 - **Le mur d'escalade** : dehors, sur la façade du fort au-dessus de la mer, grimper jusqu'à la clé en évitant les prises qui s'effritent.
 - **La grotte au trésor** : attraper un maximum de pièces d'or en 25 secondes.
 

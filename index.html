@@ -296,7 +296,7 @@ const shuffle=a=>{a=Array.isArray(a)?[...a]:a&&typeof a!=="string"&&a[Symbol.ite
 const TYPES={memo:{icon:"🃏",name:"Les cartes"},compte:{icon:"🐚",name:"Les coquillages"},intrus:{icon:"🔍",name:"L'intrus"},enigme:{icon:"🐢",name:"Les devinettes"},
   labyrinthe:{icon:"🧭",name:"Le labyrinthe"},jarres:{icon:"🏺",name:"Les jarres"},pont:{icon:"🌉",name:"Le pont de corde"},eau:{icon:"💧",name:"La cellule d'eau"},
   peche:{icon:"🎣",name:"La pêche"},cloches:{icon:"🔔",name:"Les cloches"},ombres:{icon:"🔦",name:"Les ombres"},crabes:{icon:"🦀",name:"Les crabes"},
-  rondin:{icon:"🪵",name:"Le rondin"},escalade:{icon:"🧗",name:"Le mur d'escalade"},corniche:{icon:"🌬️",name:"La corniche"}};
+  rondin:{icon:"🪵",name:"Le rondin"},escalade:{icon:"🧗",name:"Le mur d'escalade"},corniche:{icon:"🌬️",name:"La corniche"},plongeon:{icon:"🤿",name:"Le plongeon"}};
 const SLOTS=[{s:9},{s:29,up:1},{s:66.27},{s:139,up:1},{s:87.2},{s:9,up:1},{s:102.2},{s:45,up:1},{s:29}];
 function newSession(){return{types:shuffle(Object.keys(TYPES)).slice(0,SLOTS.length),started:Date.now()}}
 let session=load("fortSession",null);
@@ -1047,7 +1047,7 @@ function tween(ms,fn,ease){ease=ease||(k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2);r
 function flyTo(pos,look,ms){const p0=camera.position.clone(),l0=curLook.clone();
   return tween(ms,k=>{camera.position.lerpVectors(p0,pos,k);curLook.lerpVectors(l0,look,k);camera.lookAt(curLook)})}
 const TITLES={memo:"Épreuve des cartes !",compte:"Épreuve des coquillages !",peche:"Épreuve de la pêche !",intrus:"Épreuve de l'intrus !",enigme:"Épreuve des devinettes !",vigie:"L'énigme de la vigie !",
-  labyrinthe:"Épreuve du labyrinthe !",cloches:"Épreuve des cloches !",ombres:"Épreuve des ombres !",crabes:"Épreuve des crabes !",eau:"La cellule d'eau !",jarres:"Épreuve des jarres !",pont:"Le pont de corde !",rondin:"Épreuve du rondin !",escalade:"Le mur d'escalade !",corniche:"Épreuve de la corniche !"};
+  labyrinthe:"Épreuve du labyrinthe !",cloches:"Épreuve des cloches !",ombres:"Épreuve des ombres !",crabes:"Épreuve des crabes !",eau:"La cellule d'eau !",jarres:"Épreuve des jarres !",pont:"Le pont de corde !",rondin:"Épreuve du rondin !",escalade:"Le mur d'escalade !",corniche:"Épreuve de la corniche !",plongeon:"Épreuve du plongeon !"};
 let busy=false,saved=null;
 async function enterDoor(id,after){
   if(busy)return;busy=true;P.target=null;hideMarker();for(const k in keys)keys[k]=false;
@@ -1179,7 +1179,7 @@ function openPanel(title,sayText,cave){
   panel.querySelector(".close").onclick=closePanel;overlay.hidden=false;musicLevel(.18);say(sayText,panel.querySelector(".say"),null,true);return panel.querySelector(".zone")}
 function stopAll(){timers.forEach(t=>{clearInterval(t);clearTimeout(t)});timers=[];cleanups.forEach(f=>{try{f()}catch(e){}});cleanups=[];document.querySelectorAll('.sablier').forEach(e=>e.remove());sab=null}
 /* ================= LE SABLIER ================= */
-const TIMES={cloches:95,ombres:60,crabes:50,memo:100,compte:70,peche:50,intrus:70,enigme:100,vigie:110,labyrinthe:80,jarres:110,pont:80,eau:40,rondin:75,escalade:70,corniche:85};
+const TIMES={cloches:95,ombres:60,crabes:50,memo:100,compte:70,peche:50,intrus:70,enigme:100,vigie:110,labyrinthe:80,jarres:110,pont:80,eau:40,rondin:75,escalade:70,corniche:85,plongeon:100};
 let sab=null;
 function slam(){const c=actx;if(!c||!noiseBuf)return;const t=c.currentTime;
   const n=c.createBufferSource();n.buffer=noiseBuf;const f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=380;n.connect(f);f.connect(g);g.connect(c.destination);
@@ -1259,7 +1259,7 @@ function win(id){
   sayP(first?(left?`Bravo ! Plus que ${left} clé${left>1?"s":""} !`:`C'est la dernière clé ! Le trésor t'attend !`):"Bravo, encore réussi !",first?`Une clé pour ${cap()} !`:null);
   zone.querySelector(".big").onclick=closePanel}
 function wrong(b,msg){b.classList.remove("bad");void b.offsetWidth;b.classList.add("bad");nope();sayP(msg)}
-function openChallenge(id){({memo,compte,peche,intrus,enigme,vigie,labyrinthe,eau,jarres,pont,cloches,ombres,crabes,rondin,escalade,corniche})[id]();startSablier(id)}
+function openChallenge(id){({memo,compte,peche,intrus,enigme,vigie,labyrinthe,eau,jarres,pont,cloches,ombres,crabes,rondin,escalade,corniche,plongeon})[id]();startSablier(id)}
 
 /* ================= BANQUE D'ÉNIGMES (sans répétition d'une partie à l'autre) ================= */
 const DEV=[
@@ -2045,6 +2045,89 @@ function ombres(){
   room.click=e=>{const h=roomRay(e).intersectObjects(shads);if(h.length)choose(h[0].object)};
   room.hover=e=>{const h=roomRay(e).intersectObjects(shads);renderer.domElement.style.cursor=h.length?"pointer":"default"};
   next()}
+/* ---------- Le plongeon : sauter du fort, trouver la clé cachée sous l'eau, éviter les poissons-serpents ---------- */
+function eelMesh(){const g=new THREE.Group(),segs=[],n=20;
+  const cv=document.createElement("canvas");cv.width=64;cv.height=64;const k=cv.getContext("2d");k.fillStyle="#6f8a2a";k.fillRect(0,0,64,64);k.fillStyle="#3c4a14";for(let i=0;i<40;i++){k.beginPath();k.arc(Math.random()*64,Math.random()*64,2+Math.random()*4,0,7);k.fill()}
+  const m=new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(cv),color:C("#5a6a2a"),roughness:.45,metalness:.1});
+  for(let i=0;i<n;i++){const r=.17*(1-i/n*.8)+.03,s=new THREE.Mesh(new THREE.SphereGeometry(r,10,8),m);s.scale.set(1,1,2);g.add(s);segs.push(s)}
+  const head=segs[0];const jaw=new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),new THREE.MeshStandardMaterial({color:C("#b8c070"),roughness:.6}));jaw.position.set(0,-.07,.12);head.add(jaw);
+  [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),new THREE.MeshBasicMaterial({color:0xfff2a0}));e.position.set(s*.09,.07,.1);head.add(e);
+    const p=new THREE.Mesh(new THREE.SphereGeometry(.022,6,5),new THREE.MeshBasicMaterial({color:0x000000}));p.position.set(s*.1,.08,.14);head.add(p)});
+  const fin=new THREE.Mesh(new THREE.PlaneGeometry(.04,.18),new THREE.MeshStandardMaterial({color:C("#9aa83a"),side:THREE.DoubleSide,transparent:true,opacity:.8}));
+  segs.forEach((s,i)=>{if(i>1&&i%2===0){const f=fin.clone();f.position.y=.14*(1-i/n*.7);s.add(f)}});return{g,segs}}
+function clamMesh(){const g=new THREE.Group(),m=new THREE.MeshStandardMaterial({color:C("#d9a8a0"),roughness:.55,side:THREE.DoubleSide});
+  const lo=new THREE.Mesh(new THREE.SphereGeometry(.7,20,10,0,Math.PI*2,Math.PI/2,Math.PI/2),m);lo.scale.y=.45;g.add(lo);
+  const hinge=new THREE.Group();hinge.position.set(0,0,-.65);g.add(hinge);
+  const up=new THREE.Mesh(new THREE.SphereGeometry(.7,20,10,0,Math.PI*2,0,Math.PI/2),m);up.scale.y=.5;up.position.z=.65;hinge.add(up);
+  const ribM=new THREE.MeshStandardMaterial({color:C("#b9837a"),roughness:.6});for(let i=-3;i<=3;i++){const rb=new THREE.Mesh(new THREE.TorusGeometry(.7,.02,4,20,Math.PI),ribM);rb.rotation.set(0,i*.22,0);rb.scale.y=.5;rb.position.z=.65;hinge.add(rb)}
+  const pearl=new THREE.Mesh(new THREE.SphereGeometry(.12,14,10),new THREE.MeshStandardMaterial({color:0xf6f2ea,roughness:.15,metalness:.2}));pearl.position.y=.08;g.add(pearl);
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true});return{g,hinge,pearl}}
+function plongeon(){
+  const NE=[2,3,5][LV()],NC=[3,4,6][LV()],ESP=[.35,.5,.7][LV()],HIT=[.7,.85,.95][LV()];
+  const eels=[],clams=[],rays=[],bubbles=[];let keyClam=0,key,phase="top",sw={x:0,y:-1.6,z:7,yaw:0,pitch:-.15},hold={f:0,t:0},target=null,inv=0,hurt=0,done_=false,splashT=0;
+  const UW=new THREE.Color(.04,.22,.32),SKYC=new THREE.Color(.55,.72,.88);
+  const zone=openRoom("Le plongeon","Tu es tout en haut du fort. Saute dans la mer, trouve la clé cachée dans un coquillage géant… et attention aux poissons-serpents !",()=>{
+    const r=newRoom({fov:66,hemi:.8,fogNear:60,fogFar:260});const S=r.scene;
+    S.background=(scene.background&&scene.background.isTexture)?scene.background:SKYC.clone();r.skyBg=S.background;S.fog.color.copy(new THREE.Color(.7,.78,.86));
+    const sun=new THREE.DirectionalLight(0xfff0d6,1.4);sun.position.set(-8,30,10);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-14,right:14,top:14,bottom:-14});sun.shadow.camera.updateProjectionMatrix();S.add(sun);
+    const wall=new THREE.Mesh(new THREE.PlaneGeometry(60,40),stoneMat(60/3.5,40/3.5,"#d2bf98"));wall.position.set(0,6,12);wall.rotation.y=Math.PI;S.add(wall);
+    const ledge=box(4,.4,1.2,stoneMat(1,.3,"#a85a3c"),0,11.8,11.2,S);
+    const wn=tex(waterNormalCanvas(),40,40,false);const sea=new THREE.Mesh(new THREE.PlaneGeometry(300,300),new THREE.MeshStandardMaterial({color:C("#16597e"),roughness:.1,metalness:.3,normalMap:wn,side:THREE.DoubleSide,transparent:true,opacity:.93}));
+    sea.rotation.x=-Math.PI/2;S.add(sea);r.sea=sea;r.wn=wn;
+    const bed=new THREE.Mesh(new THREE.PlaneGeometry(60,60,40,40),new THREE.MeshStandardMaterial({map:tex(sandCanvas(),10,10),color:C("#b8b48a"),roughness:1}));
+    const bp=bed.geometry.attributes.position;for(let i=0;i<bp.count;i++)bp.setZ(i,Math.sin(bp.getX(i)*.4)*.25+Math.cos(bp.getY(i)*.3)*.3);bed.geometry.computeVertexNormals();
+    bed.rotation.x=-Math.PI/2;bed.position.y=-7;bed.receiveShadow=true;S.add(bed);r.bed=bed;
+    const rock=new THREE.MeshStandardMaterial({color:C("#5d6a62"),roughness:1,flatShading:true});
+    for(let i=0;i<16;i++){const s=.6+Math.random()*1.6,m=new THREE.Mesh(new THREE.DodecahedronGeometry(s,0),rock);const a=Math.random()*6.28,d=4+Math.random()*10;m.position.set(Math.cos(a)*d,-7+s*.3,Math.sin(a)*d-1);m.scale.y=.6+Math.random()*.5;m.rotation.y=Math.random()*3;m.castShadow=true;S.add(m)}
+    const found=new THREE.Mesh(new THREE.PlaneGeometry(60,8),stoneMat(15,2,"#6f7a62"));found.position.set(0,-3.5,11.9);found.rotation.y=Math.PI;S.add(found);
+    r.weeds=[];const wm=new THREE.MeshStandardMaterial({color:C("#2f7a3a"),roughness:1,side:THREE.DoubleSide});
+    for(let i=0;i<40;i++){const h=1+Math.random()*2.2,w=new THREE.Mesh(new THREE.PlaneGeometry(.22,h,1,6),wm);const a=Math.random()*6.28,d=2+Math.random()*12;w.position.set(Math.cos(a)*d,-7+h/2,Math.sin(a)*d-1);w.rotation.y=Math.random()*3;w.userData.ph=Math.random()*6;w.userData.base=w.geometry.attributes.position.array.slice();S.add(w);r.weeds.push(w)}
+    const rayM=new THREE.MeshBasicMaterial({color:0x9fe8ff,transparent:true,opacity:.07,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+    for(let i=0;i<9;i++){const p=new THREE.Mesh(new THREE.PlaneGeometry(1.2+Math.random(),9),rayM);p.position.set((Math.random()-.5)*16,-3,(Math.random()-.5)*14);p.rotation.set(0,Math.random()*3,.25);S.add(p);rays.push(p)}
+    const bm=new THREE.MeshBasicMaterial({color:0xddf6ff,transparent:true,opacity:.6});for(let i=0;i<40;i++){const b=new THREE.Mesh(new THREE.SphereGeometry(.03+Math.random()*.04,6,5),bm);b.position.set((Math.random()-.5)*20,-7+Math.random()*7,(Math.random()-.5)*20);b.userData.v=.4+Math.random()*.6;S.add(b);bubbles.push(b)}
+    // coquillages géants, la clé est dans l'un d'eux
+    keyClam=rnd(NC);for(let i=0;i<NC;i++){const c=clamMesh();const a=i/NC*Math.PI*2+Math.random()*.5,d=5+Math.random()*5;c.g.position.set(Math.cos(a)*d,-6.75,Math.sin(a)*d-1);c.g.rotation.y=Math.atan2(-c.g.position.x,-c.g.position.z);S.add(c.g);c.open=0;c.want=0;clams.push(c)}
+    key=keyMesh();key.scale.setScalar(.45);key.position.set(0,.18,0);clams[keyClam].g.add(key);key.visible=true;clams[keyClam].pearl.visible=false;
+    const kl=new THREE.PointLight(0xffc040,0,4,2);kl.position.y=.6;clams[keyClam].g.add(kl);r.kl=kl;
+    // poissons-serpents
+    for(let i=0;i<NE;i++){const e=eelMesh();S.add(e.g);e.cx=(Math.random()-.5)*8;e.cz=(Math.random()-.5)*8-1;e.R=3+Math.random()*4;e.y0=-6+Math.random()*3.5;e.a=Math.random()*6.28;e.sp=ESP*(Math.random()<.5?1:-1);e.ph=Math.random()*6;eels.push(e)}
+    r.uwLight=new THREE.PointLight(0x7fd8ff,0,14,2);S.add(r.uwLight);
+    r.camera.position.set(0,13.3,10.9);r.camera.lookAt(0,0,0);return r});
+  zone.innerHTML=`<button class="big jumpbtn">🤿 Sauter !</button><div class="lrbtns" hidden><button class="big" data-k="l" aria-label="Tourner à gauche">⬅️</button><button class="big" data-k="f" aria-label="Nager">⬆️</button><button class="big" data-k="r" aria-label="Tourner à droite">➡️</button></div>`;
+  const jb=zone.querySelector(".jumpbtn"),pad=zone.querySelector(".lrbtns");
+  pad.querySelectorAll("button").forEach(b=>{const k=b.dataset.k,set=v=>{if(k==="f")hold.f=v;else hold.t=v?(k==="l"?1:-1):0};
+    b.addEventListener("pointerdown",e=>{e.preventDefault();set(1);target=null});["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,()=>set(0)))});
+  const KM={ArrowUp:"f",KeyW:"f",KeyZ:"f",ArrowLeft:"l",KeyA:"l",KeyQ:"l",ArrowRight:"r",KeyD:"r"};
+  const kd=e=>{const k=KM[e.code];if(!k||phase!=="swim")return;e.preventDefault();target=null;if(k==="f")hold.f=1;else hold.t=k==="l"?1:-1},ku=e=>{const k=KM[e.code];if(!k)return;if(k==="f")hold.f=0;else hold.t=0};
+  addEventListener("keydown",kd);addEventListener("keyup",ku);cleanups.push(()=>{removeEventListener("keydown",kd);removeEventListener("keyup",ku)});
+  function splash(){const c=actx;if(!c||!noiseBuf)return;const n=c.createBufferSource();n.buffer=noiseBuf;const f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=1200;
+    n.connect(f);f.connect(g);g.connect(c.destination);const t=c.currentTime;g.gain.setValueAtTime(.6,t);g.gain.exponentialRampToValueAtTime(.001,t+1.4);n.start(t);n.stop(t+1.5)}
+  function underwater(on){const S=room.scene;if(on){S.background=UW.clone();S.fog.color.copy(UW);S.fog.near=1;S.fog.far=22;room.uwLight.intensity=1.2}else{S.background=room.skyBg;S.fog.color.set(.7,.78,.86);S.fog.near=60;S.fog.far=260;room.uwLight.intensity=0}}
+  jb.onclick=()=>{if(phase!=="top")return;phase="fall";jb.hidden=true;sayP("Trois, deux, un… Plouf !");splashT=0};
+  room.click=e=>{if(phase!=="swim")return;const h=roomRay(e).intersectObjects([room.bed,...clams.map(c=>c.g)],true);if(h.length){const p=h[0].point;target={x:p.x,y:Math.max(-6.2,Math.min(-1.2,p.y+1)),z:p.z}}};
+  room.update=(dt,t)=>{const c=room.camera;room.wn.offset.set(t*.01,t*.008);
+    room.weeds.forEach(w=>{const a=w.geometry.attributes.position,b=w.userData.base;for(let i=0;i<a.count;i++){const y=b[i*3+1]+(w.geometry.parameters.height/2);a.array[i*3]=b[i*3]+Math.sin(t*1.4+w.userData.ph+y)*.12*y}a.needsUpdate=true});
+    bubbles.forEach(b=>{b.position.y+=b.userData.v*dt;if(b.position.y>-.1)b.position.y=-7});
+    rays.forEach((p,i)=>{p.material.opacity=.05+Math.sin(t*.7+i)*.03});
+    eels.forEach(e=>{e.a+=e.sp*dt;e.segs.forEach((s,i)=>{const a=e.a-Math.sign(e.sp)*i*.065;s.position.set(e.cx+Math.cos(a)*e.R+Math.sin(t*3+i*.6)*.15,e.y0+Math.sin(a*2+e.ph)*.8,e.cz+Math.sin(a)*e.R);
+      if(i>0)s.lookAt(e.segs[i-1].position);else{const n=new THREE.Vector3(e.cx+Math.cos(e.a+Math.sign(e.sp)*.1)*e.R,s.position.y,e.cz+Math.sin(e.a+Math.sign(e.sp)*.1)*e.R);s.lookAt(n)}})});
+    clams.forEach((cl,i)=>{const d=Math.hypot(sw.x-cl.g.position.x,sw.z-cl.g.position.z);cl.want=phase==="swim"&&d<2.6&&sw.y<-4?1:cl.want*(d>4?0:1);cl.open+=(cl.want-cl.open)*Math.min(1,dt*3);cl.hinge.rotation.x=-cl.open*1.1;
+      if(i===keyClam){key.rotation.y+=dt*2;room.kl.intensity=cl.open*1.6;if(cl.open>.6&&!done_&&d<2.2){done_=true;yay();sayP("Bravo, tu as trouvé la clé ! Vite, on remonte !");secure();phase="up"}}
+      else if(cl.open>.6&&!cl.said){cl.said=true;sayP("Rien ici… juste une perle. Cherche dans un autre coquillage !")}});
+    if(phase==="top"){c.position.set(0,13.3+Math.sin(t*1.2)*.03,10.9);c.lookAt(0,0,2)}
+    else if(phase==="fall"){splashT+=dt;const k=Math.min(1,splashT/1.1);c.position.set(0,13.3-k*k*15,10.9-k*4.5);c.lookAt(0,-6,0);if(k>=1){phase="swim";splash();underwater(true);sw={x:0,y:-1.8,z:6.4,yaw:0,pitch:-.25};pad.hidden=false;
+        sayP("Tu es sous l'eau ! Nage avec les flèches, ou clique là où tu veux aller. Ouvre les coquillages géants pour trouver la clé.")}}
+    else if(phase==="swim"){
+      if(hold.t)sw.yaw+=hold.t*1.6*dt;
+      let mx=0,mz=0,my=0;if(hold.f){mx=-Math.sin(sw.yaw);mz=-Math.cos(sw.yaw);my=(-4.8-sw.y)*.25}
+      else if(target){const dx=target.x-sw.x,dz=target.z-sw.z,dy=target.y-sw.y,d=Math.hypot(dx,dz,dy);if(d<.3)target=null;else{mx=dx/d;mz=dz/d;my=dy/d;sw.yaw+=angDiff(sw.yaw,Math.atan2(-dx,-dz))*Math.min(1,dt*4)}}
+      const sp=2.3;sw.x+=mx*sp*dt;sw.z+=mz*sp*dt;sw.y=Math.max(-6.2,Math.min(-1.2,sw.y+my*sp*dt));const rr=Math.hypot(sw.x,sw.z+1);if(rr>13){sw.x*=13/rr;sw.z=(sw.z+1)*13/rr-1}if(sw.z>10.5)sw.z=10.5;
+      inv=Math.max(0,inv-dt);if(!inv)for(const e of eels){for(let i=0;i<e.segs.length;i+=2){const p=e.segs[i].position;if(Math.hypot(p.x-sw.x,p.y-sw.y,p.z-sw.z)<HIT){inv=2.2;hurt=1;nope();
+        sayP("Aïe ! Un poisson-serpent t'a touché ! On repart du rocher de départ…");sw={x:0,y:-1.8,z:6.4,yaw:0,pitch:-.25};target=null;break}}if(inv)break}
+      hurt=Math.max(0,hurt-dt*1.5);room.scene.fog.color.setRGB(UW.r+hurt*.5,UW.g,UW.b);room.scene.background.copy(room.scene.fog.color);
+      const bob=Math.sin(t*1.8)*.05;c.position.set(sw.x,sw.y+bob,sw.z);c.rotation.set(0,0,0);c.rotateY(sw.yaw);c.rotateX(sw.pitch+Math.sin(t*1.1)*.03);c.rotateZ(Math.sin(t*.9)*.03);
+      room.uwLight.position.set(sw.x,sw.y+1,sw.z)}
+    else if(phase==="up"){sw.y+=dt*2.2;c.position.y=sw.y;c.rotation.x=Math.min(.9,c.rotation.x+dt);if(sw.y>-.2&&phase==="up"){phase="end";underwater(false);splash();c.position.y=.4;setTimeout(()=>win("plongeon"),700)}}}}
 
 function pont(){
   const N=[6,8,10][LV()],Z0=8.2,Z1=-8.2,SAG=1.1,ZONE=[.45,.38,.3][LV()];
